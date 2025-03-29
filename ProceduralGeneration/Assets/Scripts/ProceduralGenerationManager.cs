@@ -5,8 +5,6 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-// TODO: - Calculer les positions interdites quand on monte et descend sans impacter la currentTileLocation
-//       - Backtracking si on se retouve bloquer 
 
 enum Direction
 {
@@ -18,8 +16,30 @@ enum Direction
     BACKWARD
 };
 
+enum DirectionnelDirection
+{
+    Right,
+    RightForward,
+    Forward,
+    LeftForward,
+    Left
+};
+
+enum Generation
+{
+    Random,
+    Directionnel
+};
+
 public class ProceduralGenerationManager : MonoBehaviour
 {
+    [Header("Chose Generation :")]
+    [SerializeField] Generation generation;
+    [SerializeField] [Tooltip("0 for random seed")]
+        int seed;
+    [SerializeField] new Camera camera;
+    [SerializeField] bool visualize;
+
     [Header("Generation parameters")]
     [SerializeField] int pathLength;
     [SerializeField] int minUpInARow;
@@ -30,13 +50,24 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] float downProba;
     [SerializeField] float platformProba;
 
+    [Header("Directionnel Generation Parameters")]
+    [SerializeField] int minDirectionLenght;
+    [SerializeField] int maxDirectionLenght;
+    [SerializeField] [Range (0f, 1f)] 
+        float arrondissement;
+    [SerializeField] int minBeforeUp;
+    [SerializeField] int maxBeforeUp;
+    [SerializeField] int maxNumberOfRaises;
+    [SerializeField] int minUpSize;
+    [SerializeField] int maxUpSize;
+    [SerializeField] int iterations;
+
     [Header("Debug")]
     [SerializeField] List<GameObject> pathInstances = new();
     [SerializeField] Vector3 currentTileLocation;
     [SerializeField] List<Vector2> prohibitedPositions;
     [SerializeField] List<Direction> directionsChosed = new();
     [SerializeField] List<int> numbersOfProhibitedPositions = new();
-    bool nextStep;
 
     [Header("Tiles Prefabs")]
     [SerializeField] GameObject pathTile;
@@ -50,7 +81,7 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] Vector3[] directionsTab;
     [SerializeField] Dictionary<Direction, Vector3> directions = new();
 
-
+    // random generation
     bool isGoingUp;
     bool isGoingDown;
     bool isPlatform;
@@ -66,8 +97,12 @@ public class ProceduralGenerationManager : MonoBehaviour
     Direction lastDirection = Direction.FORWARD;
     Direction slopeDirection;
 
+    // directionnel generation
+    int directionCount;
+    int stopDirectionLength;
+    DirectionnelDirection currentDirectionnelDirection;
 
-
+    [System.Obsolete]
     void Start()
     {
         // directions dictionnary initialization
@@ -76,18 +111,20 @@ public class ProceduralGenerationManager : MonoBehaviour
             directions.Add((Direction)i, directionsTab[i]);
         }
 
-        float debut = Time.realtimeSinceStartup;
-        //StartGeneration();
-        StartCoroutine(StartGenerationCoroutine());
-        print("Durée : " + (Time.realtimeSinceStartup - debut));
-    }
-
-
-    void Update()
-    {
-        if (Input.GetKeyDown("space"))
+        if (seed == 0)
         {
-            nextStep = true;
+            seed = Random.Range(0, int.MaxValue);
+        }
+        Random.seed = seed;
+        
+        if (visualize)
+        {
+            StartCoroutine(StartGenerationCoroutine());
+        } else
+        {
+            float debut = Time.realtimeSinceStartup;
+            StartGeneration();
+            print("durée : " + (Time.realtimeSinceStartup - debut));
         }
     }
 
@@ -96,15 +133,25 @@ public class ProceduralGenerationManager : MonoBehaviour
         directionsChosed.Add(Direction.FORWARD);
         for (int i = 0; i < pathLength; i++)
         {
-            nextDirection = ChooseNextDirection();
-            print(nextDirection.ToString());
-            //lastDirection = PlaceNextTile();
-            PlaceNextTile();
-            while (!nextStep)
+            switch (generation)
             {
-                yield return null;
+                case Generation.Random:
+                    nextDirection = ChooseNextDirection();
+                    PlaceNextTile();
+                    break;
+                case Generation.Directionnel:
+                    nextDirection = ChooseNextDirectionDirectionnel();
+                    PlaceNextTileDirectionnel();
+                    break;
             }
-            nextStep = false;
+            camera.transform.position = pathInstances[pathInstances.Count - 1].transform.position + new Vector3(0,150,0);
+            yield return null;
+        }
+
+        if (generation == Generation.Directionnel)
+        {
+            RaisePath();
+            FillWorld();
         }
     }
 
@@ -113,10 +160,22 @@ public class ProceduralGenerationManager : MonoBehaviour
         directionsChosed.Add(Direction.FORWARD);
         for (int i = 0; i < pathLength; i++)
         {
-            nextDirection = ChooseNextDirection();
-            print(nextDirection.ToString());
-            //lastDirection = PlaceNextTile();
-            PlaceNextTile();
+            switch (generation)
+            {
+                case Generation.Random:
+                    nextDirection = ChooseNextDirection();
+                    PlaceNextTile();
+                    break;
+                case Generation.Directionnel:
+                    nextDirection = ChooseNextDirectionDirectionnel();
+                    PlaceNextTileDirectionnel();
+                    break;
+            }
+        }
+        if (generation == Generation.Directionnel)
+        {
+            RaisePath();
+            FillWorld();
         }
     }
 
@@ -200,6 +259,8 @@ public class ProceduralGenerationManager : MonoBehaviour
         return directionChosed;
     }
 
+    
+
     // Instantiate next tile, add prohibited position of the last tile placed and return the future last direction
     Direction PlaceNextTile()
     {
@@ -262,7 +323,6 @@ public class ProceduralGenerationManager : MonoBehaviour
             return currentTileLocation;
         }
 
-
         return currentTileLocation + directions[nextDirection];
     }
 
@@ -282,7 +342,6 @@ public class ProceduralGenerationManager : MonoBehaviour
         {
             return currentTileLocation;
         }
-
 
         return currentTileLocation + directions[nextDirection];
     }
@@ -334,9 +393,6 @@ public class ProceduralGenerationManager : MonoBehaviour
     // chose if it goes up
     bool IsGoingUp()
     {
-        //Vector3 nextPosition = ComputeNextTileLocation(Direction.UP);
-        //Vector2 position2d = new Vector2(nextPosition.x, nextPosition.z);
-
         if (directionsChosed[directionsChosed.Count - 1] == Direction.FORWARD || directionsChosed[directionsChosed.Count - 1] == Direction.LEFT)
         {
             if (isGoingUp)
@@ -361,10 +417,7 @@ public class ProceduralGenerationManager : MonoBehaviour
     // chose if it goes down
     bool IsGoingDown()
     {
-        //Vector3 nextPosition = ComputeNextTileLocation(Direction.DOWN);
-        //Vector2 position2d = new Vector2(nextPosition.x, nextPosition.z);
-
-        if (directionsChosed[directionsChosed.Count - 1] == Direction.BACKWARD || directionsChosed[directionsChosed.Count - 1] == Direction.RIGHT)
+       if (directionsChosed[directionsChosed.Count - 1] == Direction.BACKWARD || directionsChosed[directionsChosed.Count - 1] == Direction.RIGHT)
         {
             if (isGoingDown)
             {
@@ -481,8 +534,139 @@ public class ProceduralGenerationManager : MonoBehaviour
         directionsChosed.RemoveAt(directionsChosed.Count - 1);
         currentTileLocation = ComputeBacktrackLocation(lastDirection);
 
-        //     directionsTab[(int) lastDirection];
         pathLength++;
+    }
 
+    // **************************** Directionnelle Generation **************************************
+
+    Direction ChooseNextDirectionDirectionnel()
+    {
+        if (directionCount < stopDirectionLength)
+        {
+            directionCount++;
+            return ContinueDirection();
+        }
+
+        directionCount = 0;
+        stopDirectionLength = Random.Range(minDirectionLenght, maxDirectionLenght);
+
+        float directionChoice = Random.Range(0f, 1f);
+
+        if (directionChoice < arrondissement)
+        {
+            if (Random.Range(0,2) % 2 == 0)
+            {
+                currentDirectionnelDirection++;
+            } else
+            {
+                currentDirectionnelDirection--;
+            }
+        } else
+        {
+            if (Random.Range(0, 2) % 2 == 0)
+            {
+                currentDirectionnelDirection += 2;
+            }
+            else
+            {
+                currentDirectionnelDirection-= 2;
+            }
+        }
+
+        if ((int)currentDirectionnelDirection > 4)
+        {
+            currentDirectionnelDirection = (DirectionnelDirection)4;
+        }
+        else if ((int)currentDirectionnelDirection < 0)
+        {
+            currentDirectionnelDirection = 0;
+        }
+
+        return ContinueDirection();
+    }
+
+    Direction ContinueDirection()
+    {
+        switch (currentDirectionnelDirection)
+        {
+            case DirectionnelDirection.RightForward:
+                if (nextDirection == Direction.FORWARD)
+                {
+                    return Direction.RIGHT;
+                } else
+                {
+                    return Direction.FORWARD;
+                }
+            case DirectionnelDirection.LeftForward:
+                if (nextDirection == Direction.FORWARD)
+                {
+                    return Direction.LEFT;
+                }
+                else
+                {
+                    return Direction.FORWARD;
+                }
+            case DirectionnelDirection.Forward:
+                return Direction.FORWARD;
+            case DirectionnelDirection.Right:
+                return Direction.RIGHT;
+            case DirectionnelDirection.Left:
+                return Direction.LEFT;
+            default:
+                return Direction.FORWARD;
+        }
+    }
+
+    void PlaceNextTileDirectionnel()
+    {
+        Vector3 nextTileLocation = ComputeNextTileLocationDirectionnel();
+        GameObject pathTileinstance;
+
+        pathTileinstance = Instantiate(pathTile, nextTileLocation, TileOrientation());
+
+        nbGenerated++;
+        pathInstances.Add(pathTileinstance);
+        currentTileLocation = nextTileLocation;
+    }
+
+    Vector3 ComputeNextTileLocationDirectionnel()
+    {
+        return currentTileLocation + directions[nextDirection];
+    }
+
+    void RaisePath()
+    {
+        int indexToRaise = 0;
+        for (int i=0; i<maxNumberOfRaises; i++)
+        {
+            indexToRaise += Random.Range(minBeforeUp, maxBeforeUp);
+            int upSize = Random.Range(minUpSize, maxUpSize);
+            int currentUpSize = 0;
+            int k;
+            for (k = 0; k < upSize; k++)
+            {
+                Vector3 position = pathInstances[indexToRaise + k].transform.position + new Vector3(0, currentUpSize, 0);
+                Quaternion rotation = pathInstances[indexToRaise + k].transform.rotation;
+                Destroy(pathInstances[indexToRaise + k]);
+                pathInstances[indexToRaise + k] = Instantiate(slopePathTile, position, rotation);
+                currentUpSize++;
+            }
+            for (int j=indexToRaise+k; j<pathInstances.Count; j++)
+            {
+                pathInstances[j].transform.position += new Vector3(0, upSize, 0);
+            }
+        }
+    }
+
+    void FillWorld()
+    {
+        for (int i=0; i<iterations; i++)
+        {
+            foreach (GameObject tile in pathInstances)
+            {
+                TileNeighbors tileNeighbor = tile.GetComponent<TileNeighbors>();
+                tileNeighbor.DetectNeighbors();
+            }
+        }
     }
 }

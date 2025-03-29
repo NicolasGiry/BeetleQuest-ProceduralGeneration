@@ -229,7 +229,7 @@ GameObject:
   m_Layer: 0
   m_Name: ProceduralGenerationManager
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -245,7 +245,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ceb4a3599e691ae4f8a8f013a41b125f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pathLength: 10000
+  generation: 1
+  seed: 1
+  camera: {fileID: 963194227}
+  visualize: 0
+  pathLength: 1000
   minUpInARow: 3
   maxUpInARow: 8
   minPlatformSize: 50
@@ -253,6 +257,15 @@ MonoBehaviour:
   upProba: 0.5
   downProba: 0.9
   platformProba: 0.5
+  minDirectionLenght: 3
+  maxDirectionLenght: 10
+  arrondissement: 1
+  minBeforeUp: 50
+  maxBeforeUp: 100
+  maxNumberOfRaises: 10
+  minUpSize: 2
+  maxUpSize: 10
+  iterations: 1
   pathInstances: []
   currentTileLocation: {x: 0, y: 0, z: 0}
   prohibitedPositions: []
@@ -280,7 +293,7 @@ Transform:
   m_GameObject: {fileID: 791072439}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.3156086, y: 4.2814593, z: -1.6814073}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -9,12 +9,16 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2967337110004647951, guid: 659ce7c115b223d4489f91e63020b3be, type: 3}
-      propertyPath: m_Materials.Array.data[0]
+      propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: a8b0c91234b51b04eaa418dc54ba7e38, type: 2}
     - target: {fileID: 3616079413948901850, guid: 659ce7c115b223d4489f91e63020b3be, type: 3}
       propertyPath: m_Name
-      value: BlockTile_2 Variant
+      value: GrassTile
+      objectReference: {fileID: 0}
+    - target: {fileID: 3616079413948901850, guid: 659ce7c115b223d4489f91e63020b3be, type: 3}
+      propertyPath: m_TagString
+      value: Tile
       objectReference: {fileID: 0}
     - target: {fileID: 4135770922679710560, guid: 659ce7c115b223d4489f91e63020b3be, type: 3}
       propertyPath: m_LocalPosition.x
