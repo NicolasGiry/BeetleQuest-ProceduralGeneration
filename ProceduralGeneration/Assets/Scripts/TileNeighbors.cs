@@ -4,17 +4,34 @@ using UnityEngine;
 
 public class TileNeighbors : MonoBehaviour
 {
-    [SerializeField] NeighborDetector neighborDetector;
-    [SerializeField] Vector3[] neighborPositions;
-    public List<GameObject> neighbors = new List<GameObject>();
-
+    [SerializeField] List<GameObject> neighbors = new List<GameObject>();
+    [SerializeField] float detectionRadius;
+    [SerializeField] LayerMask tileLayer;
+    [SerializeField] Vector3 offset;
 
     public void DetectNeighbors()
     {
-        for (int i = 0; i < 26; i++)
+        //neighbors.Clear();
+
+        Collider[] hits = Physics.OverlapSphere(transform.position + offset, detectionRadius, tileLayer);
+
+        foreach (Collider hit in hits)
         {
-            neighborDetector.DetectNeighbors(neighborPositions[i]);
+            if (hit.CompareTag("Tile") && hit.gameObject != transform.gameObject)
+            {
+                neighbors.Add(hit.gameObject);
+            }
         }
-        neighbors = neighborDetector.GetNeighbors();
+    }
+
+    public List<GameObject> GetNeighbors() {
+        return neighbors;
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        // Draw a yellow sphere at the transform's position
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawSphere(transform.position + offset, detectionRadius);
     }
 }

@@ -64,6 +64,9 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] List<GameObject> pathInstances = new();
+    List<GameObject> pathInstancesTemp = new();
+    [SerializeField] List<GameObject> pathInstancesToCompute = new();
+    List<GameObject> pathInstancesToRemove = new();
     [SerializeField] Vector3 currentTileLocation;
     [SerializeField] List<Vector2> prohibitedPositions;
     [SerializeField] List<Direction> directionsChosed = new();
@@ -80,6 +83,7 @@ public class ProceduralGenerationManager : MonoBehaviour
     [Header("Directions")]
     [SerializeField] Vector3[] directionsTab;
     [SerializeField] Dictionary<Direction, Vector3> directions = new();
+    [SerializeField] Vector3[] neighborsPositions = new Vector3[26];
 
     // random generation
     bool isGoingUp;
@@ -102,9 +106,12 @@ public class ProceduralGenerationManager : MonoBehaviour
     int stopDirectionLength;
     DirectionnelDirection currentDirectionnelDirection;
 
+    float debut;
+
     [System.Obsolete]
     void Start()
     {
+        debut = Time.realtimeSinceStartup;
         // directions dictionnary initialization
         for (int i = 0; i < directionsTab.Length; i++)
         {
@@ -122,9 +129,9 @@ public class ProceduralGenerationManager : MonoBehaviour
             StartCoroutine(StartGenerationCoroutine());
         } else
         {
-            float debut = Time.realtimeSinceStartup;
+            
             StartGeneration();
-            print("durée : " + (Time.realtimeSinceStartup - debut));
+            print("duration : " + (Time.realtimeSinceStartup - debut));
         }
     }
 
@@ -145,12 +152,13 @@ public class ProceduralGenerationManager : MonoBehaviour
                     break;
             }
             camera.transform.position = pathInstances[pathInstances.Count - 1].transform.position + new Vector3(0,150,0);
-            yield return null;
+            //yield return null;
         }
 
         if (generation == Generation.Directionnel)
         {
             RaisePath();
+            yield return null;
             FillWorld();
         }
     }
@@ -623,6 +631,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         GameObject pathTileinstance;
 
         pathTileinstance = Instantiate(pathTile, nextTileLocation, TileOrientation());
+        pathTileinstance.name = "Path_"+nbGenerated;
 
         nbGenerated++;
         pathInstances.Add(pathTileinstance);
@@ -656,17 +665,83 @@ public class ProceduralGenerationManager : MonoBehaviour
                 pathInstances[j].transform.position += new Vector3(0, upSize, 0);
             }
         }
+        print("RAISE FINISHED");
     }
 
     void FillWorld()
     {
+        foreach (GameObject instance in pathInstances) {
+            pathInstancesToCompute.Add(instance);
+        }
+
         for (int i=0; i<iterations; i++)
         {
-            foreach (GameObject tile in pathInstances)
+            pathInstancesTemp.Clear();
+            pathInstancesToRemove.Clear();
+
+            foreach (GameObject tile in pathInstancesToCompute)
             {
                 TileNeighbors tileNeighbor = tile.GetComponent<TileNeighbors>();
                 tileNeighbor.DetectNeighbors();
             }
+
+            // add grass tile 
+            foreach (GameObject tile in pathInstancesToCompute) 
+            {
+                List<GameObject> neighbors = tile.GetComponent<TileNeighbors>().GetNeighbors();
+                
+                bool[] hasNeighbor = CheckNeighbors(tile, neighbors);
+
+                CheckAndPlaceHorizontal(hasNeighbor, tile.transform.position);
+                CheckAndPlaceVertical(hasNeighbor, tile.transform.position);
+
+                pathInstancesToRemove.Add(tile);
+            }
+
+            foreach (GameObject toRemove in pathInstancesToRemove) {
+                pathInstancesToCompute.Remove(toRemove);
+            }
+
+            foreach(GameObject temp in pathInstancesTemp)
+            {
+                pathInstancesToCompute.Add(temp);
+            }
+            
+        }
+
+        print("FILL FINISHED IN " + (Time.realtimeSinceStartup - debut));
+    }
+
+    bool[] CheckNeighbors(GameObject tile, List<GameObject> neighbors) {
+        bool[] hasNeighbor = new bool[26];
+        foreach (GameObject neighbor in neighbors) {
+            Vector3 diff = neighbor.transform.position - tile.transform.position;
+            for(int i=0; i<26; i++) {
+                if (diff == neighborsPositions[i]) {
+                    hasNeighbor[i] = true;
+                }
+            }
+        }
+
+        return hasNeighbor;
+    }
+
+    void CheckAndPlaceHorizontal(bool[] hasNeighbor, Vector3 position) 
+    {
+        //288353
+        if (!hasNeighbor[14] && !hasNeighbor[6]) {
+            pathInstancesTemp.Add(Instantiate(grassTile, position + neighborsPositions[14], Quaternion.identity));
+        } else if (!hasNeighbor[13] && !hasNeighbor[4]) {
+            pathInstancesTemp.Add(Instantiate(grassTile, position + neighborsPositions[13], Quaternion.identity));
+        }
+    }
+
+    void CheckAndPlaceVertical(bool[] hasNeighbor, Vector3 position) 
+    {
+        if (!hasNeighbor[11] && !hasNeighbor[2]) {
+            pathInstancesTemp.Add(Instantiate(grassTile, position + neighborsPositions[11], Quaternion.identity));
+        } else if (!hasNeighbor[16] && !hasNeighbor[8]) {
+            pathInstancesTemp.Add(Instantiate(grassTile, position + neighborsPositions[16], Quaternion.identity));
         }
     }
 }

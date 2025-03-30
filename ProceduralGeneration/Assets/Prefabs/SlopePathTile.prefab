@@ -91,35 +91,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ad98a78afe1e41469d0bc15b1bbe0f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  neighborDetector: {fileID: 8326608759118612899}
-  neighborPositions:
-  - {x: -2, y: -0.5, z: 2}
-  - {x: 0, y: -0.5, z: 2}
-  - {x: 2, y: -0.5, z: 2}
-  - {x: 2, y: -0.5, z: 0}
-  - {x: 0, y: -0.5, z: 0}
-  - {x: -2, y: -0.5, z: 0}
-  - {x: -2, y: -0.5, z: -2}
-  - {x: 0, y: -0.5, z: -2}
-  - {x: 2, y: -0.5, z: -2}
-  - {x: -2, y: 1, z: 2}
-  - {x: 0, y: 1, z: 2}
-  - {x: 2, y: 1, z: 2}
-  - {x: 2, y: 1, z: 0}
-  - {x: -2, y: 1, z: 0}
-  - {x: -2, y: 1, z: -2}
-  - {x: 0, y: 1, z: -2}
-  - {x: 2, y: 1, z: -2}
-  - {x: -2, y: 2, z: 2}
-  - {x: 0, y: 2, z: 2}
-  - {x: 2, y: 2, z: 2}
-  - {x: 2, y: 2, z: 0}
-  - {x: 0, y: 2, z: 0}
-  - {x: -2, y: 2, z: 0}
-  - {x: -2, y: 2, z: -2}
-  - {x: 0, y: 2, z: -2}
-  - {x: 2, y: 2, z: -2}
   neighbors: []
+  detectionRadius: 1.75
+  tileLayer:
+    serializedVersion: 2
+    m_Bits: 1
+  offset: {x: 0, y: 1.3, z: 0}
 --- !u!64 &6877633833008534700
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -209,14 +186,3 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6814032735662396756, guid: 144008b2ac50e92439dabe9997eb7e89, type: 3}
   m_PrefabInstance: {fileID: 8179011909101501744}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &8326608759118612899 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 148514831933437075, guid: 144008b2ac50e92439dabe9997eb7e89, type: 3}
-  m_PrefabInstance: {fileID: 8179011909101501744}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea07e0c9430054146b25b7b5cb1e7559, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 

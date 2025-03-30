@@ -246,10 +246,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   generation: 1
-  seed: 1
+  seed: 0
   camera: {fileID: 963194227}
-  visualize: 0
-  pathLength: 1000
+  visualize: 1
+  pathLength: 500
   minUpInARow: 3
   maxUpInARow: 8
   minPlatformSize: 50
@@ -262,11 +262,12 @@ MonoBehaviour:
   arrondissement: 1
   minBeforeUp: 50
   maxBeforeUp: 100
-  maxNumberOfRaises: 10
+  maxNumberOfRaises: 5
   minUpSize: 2
   maxUpSize: 10
-  iterations: 1
+  iterations: 8
   pathInstances: []
+  pathInstancesToCompute: []
   currentTileLocation: {x: 0, y: 0, z: 0}
   prohibitedPositions: []
   directionsChosed: 
@@ -284,6 +285,33 @@ MonoBehaviour:
   - {x: 0, y: 0, z: -2}
   - {x: 2, y: 0, z: 0}
   - {x: -2, y: 0, z: 0}
+  neighborsPositions:
+  - {x: -2, y: -0.5, z: 2}
+  - {x: 0, y: -0.5, z: 2}
+  - {x: 2, y: -0.5, z: 2}
+  - {x: 2, y: -0.5, z: 0}
+  - {x: 0, y: -0.5, z: 0}
+  - {x: -2, y: -0.5, z: 0}
+  - {x: -2, y: -0.5, z: -2}
+  - {x: 0, y: -0.5, z: -2}
+  - {x: 2, y: -0.5, z: -2}
+  - {x: -2, y: 0, z: 2}
+  - {x: 0, y: 0, z: 2}
+  - {x: 2, y: 0, z: 2}
+  - {x: 2, y: 0, z: 0}
+  - {x: -2, y: 0, z: 0}
+  - {x: -2, y: 0, z: -2}
+  - {x: 0, y: 0, z: -2}
+  - {x: 2, y: 0, z: -2}
+  - {x: -2, y: 1, z: 2}
+  - {x: 0, y: 1, z: 2}
+  - {x: 2, y: 1, z: 2}
+  - {x: 2, y: 1, z: 0}
+  - {x: 0, y: 1, z: 0}
+  - {x: -2, y: 1, z: 0}
+  - {x: -2, y: 1, z: -2}
+  - {x: 0, y: 1, z: -2}
+  - {x: 2, y: 1, z: -2}
 --- !u!4 &791072441
 Transform:
   m_ObjectHideFlags: 0
