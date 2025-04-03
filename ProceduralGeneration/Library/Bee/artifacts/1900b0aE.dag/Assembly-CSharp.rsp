@@ -399,6 +399,7 @@
 "Assets/Scripts/NeighborDetector.cs"
 "Assets/Scripts/ProceduralGenerationManager.cs"
 "Assets/Scripts/TileNeighbors.cs"
+"Assets/Scripts/Utils.cs"
 -langversion:9.0
 /deterministic
 /optimize+

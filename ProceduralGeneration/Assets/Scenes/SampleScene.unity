@@ -245,18 +245,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ceb4a3599e691ae4f8a8f013a41b125f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  generation: 1
-  seed: 0
-  camera: {fileID: 963194227}
+  seed: 1
   visualize: 1
   pathLength: 500
-  minUpInARow: 3
-  maxUpInARow: 8
-  minPlatformSize: 50
-  minBeforeFirstSlope: 10
-  upProba: 0.5
-  downProba: 0.9
-  platformProba: 0.5
   minDirectionLenght: 3
   maxDirectionLenght: 10
   arrondissement: 1
@@ -265,7 +256,8 @@ MonoBehaviour:
   maxNumberOfRaises: 5
   minUpSize: 2
   maxUpSize: 10
-  iterations: 8
+  iterations: 0
+  camera: {fileID: 963194227}
   pathInstances: []
   pathInstancesToCompute: []
   currentTileLocation: {x: 0, y: 0, z: 0}

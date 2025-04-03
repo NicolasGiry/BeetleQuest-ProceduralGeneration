@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 969
   m_ShowMode: 4
-  m_Title: Console
+  m_Title: Game
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 332}
   m_MaxSize: {x: 10000, y: 10000}
@@ -119,7 +119,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 78
+  controlID: 20
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -832,9 +832,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: -1.3102064, y: 31.155079, z: -28.789818}
+    m_Target: {x: 76.681496, y: -2.4045439, z: -37.70789}
     speed: 2
-    m_Value: {x: -1.3102064, y: 31.155079, z: -28.789818}
+    m_Value: {x: 76.681496, y: -2.4045439, z: -37.70789}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -880,9 +880,9 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: 0.12622118, y: 0.837667, z: -0.21821627, w: 0.4845251}
+    m_Target: {x: 0.110189766, y: 0.88928705, z: -0.2972452, w: 0.32965964}
     speed: 2
-    m_Value: {x: 0.1337612, y: 0.83212066, z: -0.22838184, w: 0.4873654}
+    m_Value: {x: 0.11018958, y: 0.88928556, z: -0.2972447, w: 0.3296591}
   m_Size:
     m_Target: 9.996977
     speed: 2
@@ -1062,8 +1062,8 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: d8780000
-      m_LastClickedID: 30936
+      m_SelectedIDs: c4caf8ff
+      m_LastClickedID: 0
       m_ExpandedIDs: 2afbffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
@@ -1225,8 +1225,8 @@ MonoBehaviour:
     m_IsLocked: 1
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
-    m_SelectedIDs: ac7a0000
-    m_LastClickedID: 31404
+    m_SelectedIDs: 7c7b0000
+    m_LastClickedID: 31612
     m_ExpandedIDs: 000000008e790000907900009279000000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -1282,8 +1282,8 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: 6c250000
-    m_LastClickedInstanceID: 9580
+    m_SelectedInstanceIDs: 827b0000
+    m_LastClickedInstanceID: 31618
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs: c623000000000000245e0000d6800000d47b0000da7b0000ce6800009c790000ea720000dc740000147f0000
     m_RenameOverlay:
@@ -1302,7 +1302,7 @@ MonoBehaviour:
       m_OriginalEventType: 11
       m_IsRenamingFilename: 1
       m_TrimLeadingAndTrailingWhitespace: 0
-      m_ClientGUIView: {fileID: 10}
+      m_ClientGUIView: {fileID: 0}
     m_CreateAssetUtility:
       m_EndAction: {fileID: 0}
       m_InstanceID: 0
