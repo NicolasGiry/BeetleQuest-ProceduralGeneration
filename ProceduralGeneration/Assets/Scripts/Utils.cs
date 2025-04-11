@@ -73,4 +73,8 @@ public class Utils
                 return Quaternion.identity;
         }
     }
+
+    public float Distance (Vector3 A, Vector3 B) {
+        return Mathf.Sqrt((B.x-A.x)*(B.x-A.x) + (B.z-A.z)*(B.z-A.z));
+    }
 }

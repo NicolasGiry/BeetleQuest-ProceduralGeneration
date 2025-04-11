@@ -28,6 +28,8 @@ enum DirectionnelDirection
 public class ProceduralGenerationManager : MonoBehaviour
 {
     [Header("General Parameters:")]
+    [SerializeField] [Tooltip("0: Directionnel ; 1: Pseudo Room placement")]
+        int algorithm;
     [SerializeField] [Tooltip("0 for random seed")]
         int seed;
     [SerializeField] bool visualize;
@@ -46,6 +48,23 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] int minUpSize;
     [SerializeField] int maxUpSize;
     [SerializeField] int iterations;
+
+    [Header("Pseudo Room Placement Parameters")]
+    [SerializeField] [Range(10, 200)]
+        int nbRooms;
+    [SerializeField] int minPosX;
+    [SerializeField] int maxPosX;
+    [SerializeField] int minPosZ;
+    [SerializeField] int maxPosZ;
+    [SerializeField] int minSizeX;
+    [SerializeField] int maxSizeX;
+    [SerializeField] int minSizeZ;
+    [SerializeField] int maxSizeZ;
+    [SerializeField] List<Vector3> posRoomsPlaced = new();
+    [SerializeField] List<float> sizeXPlaced = new();
+    [SerializeField] List<float> sizeZPlaced = new();
+    [SerializeField] List<int> roomConnectedIndex = new();
+
 
     [Header("Debug")]
     [SerializeField] new Camera camera;
@@ -91,22 +110,59 @@ public class ProceduralGenerationManager : MonoBehaviour
         StartCoroutine(StartGenerationCoroutine());
     }
 
+    void Update()
+    {
+        if (Input.GetKeyDown("space")) {
+            // if (seed == 0)
+            // {
+            //     seed = Random.Range(0, int.MaxValue);
+            // }
+            // Random.seed = seed;
+            debut = Time.realtimeSinceStartup;
+            DestroyPrecedent();
+            StartCoroutine(StartGenerationCoroutine());
+        }
+    }
+
     IEnumerator StartGenerationCoroutine()
     {
         directionsChosed.Add(Direction.FORWARD);
-        for (int i = 0; i < pathLength; i++)
-        {
-            nextDirection = ChooseNextDirectionDirectionnel();
-            PlaceNextTileDirectionnel();
 
-            camera.transform.position = pathInstances[pathInstances.Count - 1].transform.position + new Vector3(0,200,0);
-            if (visualize && i%2==0)
+        switch (algorithm) {
+            case 0:
+                for (int i = 0; i < pathLength; i++)
+                {
+                    nextDirection = ChooseNextDirectionDirectionnel();
+                    PlaceNextTileDirectionnel();
+                    camera.transform.position = pathInstances[pathInstances.Count - 1].transform.position + new Vector3(0,200,0);
+                    if (visualize && i%2==0)
+                        yield return null;
+                    break;
+                }
+                RaisePath();
                 yield return null;
-        }
+                FillWorld();
+                break;
 
-        RaisePath();
-        yield return null;
-        FillWorld();
+            case 1:
+                PlaceRooms();
+                //ConnectRooms();
+                break;
+
+            default:
+                print("Error: invalid algorithm index");
+                break;
+        }
+    }
+
+    void DestroyPrecedent() {
+        foreach(GameObject path in pathInstances) {
+            Destroy(path);
+        }
+        pathInstances.Clear();
+        posRoomsPlaced.Clear();
+        sizeXPlaced.Clear();
+        sizeZPlaced.Clear();
     }
 
     // **************************** Directionnelle Generation **************************************
@@ -318,4 +374,80 @@ public class ProceduralGenerationManager : MonoBehaviour
             Destroy(tile);
         }
     }
+
+
+    // **************************** Pseudo Room Placement Generation **************************************
+
+    void PlaceRooms() {
+        for (int i=0; i<nbRooms; i++) {
+            Vector3 roomPos = new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
+            float sizeX = Random.Range(minSizeX, maxSizeX);
+            float sizeZ = Random.Range(minSizeZ, maxSizeZ);
+
+            if (RoomPlacementIsCorrect(roomPos, sizeX, sizeZ)) {
+                posRoomsPlaced.Add(roomPos);
+                sizeXPlaced.Add(sizeX);
+                sizeZPlaced.Add(sizeZ);
+
+                PlaceRoomInstance(roomPos, sizeX, sizeZ);
+            }
+        }
+        print("duration: " + (Time.realtimeSinceStartup - debut));
+    }
+
+    bool RoomPlacementIsCorrect(Vector3 roomPos, float sizeX, float sizeZ) {
+        for (int i=0; i<posRoomsPlaced.Count; i++) {
+            Vector3 currentPos = posRoomsPlaced[i];
+            float currentSizeX = sizeXPlaced[i];
+            float currentSizeZ = sizeZPlaced[i];
+
+            if (roomPos.x <= currentPos.x + currentSizeX && roomPos.x >= currentPos.x && 
+                roomPos.z <= currentPos.z + currentSizeZ && roomPos.z >= currentPos.z ||
+                roomPos.x + sizeX <= currentPos.x + currentSizeX && roomPos.x + sizeX >= currentPos.x &&
+                roomPos.z <= currentPos.z + currentSizeZ && roomPos.z >= currentPos.z ||
+                roomPos.x <= currentPos.x + currentSizeX && roomPos.x >= currentPos.x && 
+                roomPos.z + sizeZ <= currentPos.z + currentSizeZ && roomPos.z + sizeZ >= currentPos.z ||
+                roomPos.x + sizeX <= currentPos.x + currentSizeX && roomPos.x + sizeX >= currentPos.x &&
+                roomPos.z + sizeZ <= currentPos.z + currentSizeZ && roomPos.z + sizeZ >= currentPos.z ||
+                roomPos.x <= currentPos.x && roomPos.x + sizeX >= currentPos.x + currentSizeX &&
+                (roomPos.z <= currentPos.z + currentSizeZ && roomPos.z >= currentPos.z || 
+                roomPos.z + sizeZ <= currentPos.z + currentSizeZ && roomPos.z + sizeZ >= currentPos.z) ||
+                roomPos.x <= currentPos.x && roomPos.x + sizeX >= currentPos.x && 
+                roomPos.z <= currentPos.z && roomPos.z + sizeZ >= currentPos.z ||
+                roomPos.x >= currentPos.x && roomPos.x <= currentPos.x + currentSizeX && 
+                roomPos.z <= currentPos.z && roomPos.z + sizeZ >= currentPos.z) {
+
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void PlaceRoomInstance(Vector3 roomPos, float sizeX, float sizeZ) {
+        for (int x = (int) roomPos.x; x < roomPos.x + sizeX; x++) {
+            for (int z = (int) roomPos.z; z < roomPos.z + sizeZ; z++) {
+                pathInstances.Add(Instantiate(pathTile, new Vector3(x, 0, z), Quaternion.identity));
+            }
+        }
+    }
+
+    // void ConnectRooms() {
+    //     int index = 0;
+    //     foreach(Vector3 roomPosA in posRoomsPlaced) {
+    //         float distanceMin = 10000000f;
+    //         float distance; 
+    //         foreach(Vector3 roomPosB in posRoomsPlaced) {
+    //             if (!roomPosA.Equals(roomPosB)) {
+    //                 distance = utils.Distance(roomPosA, roomPosB);
+    //                 if (distance < distanceMin) {
+    //                     distanceMin = distance;
+    //                     index = posRoomsPlaced.FindIndex(roomPosB);
+    //                 }
+    //             }
+    //         }
+    //         roomConnectedIndex.Add(index);
+    //     }
+    // }
+
+
 }
