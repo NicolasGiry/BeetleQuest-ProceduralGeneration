@@ -60,11 +60,13 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] int maxSizeX;
     [SerializeField] int minSizeZ;
     [SerializeField] int maxSizeZ;
+    [SerializeField] float corridorWidthDetection;
     [SerializeField] List<Vector3> posRoomsPlaced = new();
     [SerializeField] List<float> sizeXPlaced = new();
     [SerializeField] List<float> sizeZPlaced = new();
-    [SerializeField] List<int> roomConnectedIndex = new();
-
+    [SerializeField] List<int> roomFirstTileIndex = new();
+    [SerializeField] List<Vector3> startPosCorridors = new();
+    [SerializeField] List<Vector3> endPosCorridors = new();
 
     [Header("Debug")]
     [SerializeField] new Camera camera;
@@ -124,6 +126,14 @@ public class ProceduralGenerationManager : MonoBehaviour
         }
     }
 
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        for (int i=0; i<startPosCorridors.Count; i++) {
+            Gizmos.DrawLine(startPosCorridors[i], endPosCorridors[i]);
+        }
+    }
+
     IEnumerator StartGenerationCoroutine()
     {
         directionsChosed.Add(Direction.FORWARD);
@@ -146,7 +156,7 @@ public class ProceduralGenerationManager : MonoBehaviour
 
             case 1:
                 PlaceRooms();
-                //ConnectRooms();
+                ConnectRooms();
                 break;
 
             default:
@@ -163,6 +173,9 @@ public class ProceduralGenerationManager : MonoBehaviour
         posRoomsPlaced.Clear();
         sizeXPlaced.Clear();
         sizeZPlaced.Clear();
+        roomFirstTileIndex.Clear();
+        startPosCorridors.Clear();
+        endPosCorridors.Clear();
     }
 
     // **************************** Directionnelle Generation **************************************
@@ -424,6 +437,7 @@ public class ProceduralGenerationManager : MonoBehaviour
     }
 
     void PlaceRoomInstance(Vector3 roomPos, float sizeX, float sizeZ) {
+        roomFirstTileIndex.Add(pathInstances.Count);
         for (int x = (int) roomPos.x; x < roomPos.x + sizeX; x++) {
             for (int z = (int) roomPos.z; z < roomPos.z + sizeZ; z++) {
                 pathInstances.Add(Instantiate(pathTile, new Vector3(x, 0, z), Quaternion.identity));
@@ -431,23 +445,55 @@ public class ProceduralGenerationManager : MonoBehaviour
         }
     }
 
-    // void ConnectRooms() {
-    //     int index = 0;
-    //     foreach(Vector3 roomPosA in posRoomsPlaced) {
-    //         float distanceMin = 10000000f;
-    //         float distance; 
-    //         foreach(Vector3 roomPosB in posRoomsPlaced) {
-    //             if (!roomPosA.Equals(roomPosB)) {
-    //                 distance = utils.Distance(roomPosA, roomPosB);
-    //                 if (distance < distanceMin) {
-    //                     distanceMin = distance;
-    //                     index = posRoomsPlaced.FindIndex(roomPosB);
-    //                 }
-    //             }
-    //         }
-    //         roomConnectedIndex.Add(index);
-    //     }
-    // }
+    Vector3 GetCenter(int index) {
+        return new Vector3(posRoomsPlaced[index].x + sizeXPlaced[index]/2, 0, posRoomsPlaced[index].z + sizeZPlaced[index]/2);
+    }
+
+    void ConnectRooms() {
+        // essayer de connecter toutes les salles entre elles grâce à un sphereCast, si le sphereCast croise une autre room avant d'atteindre la room souhaitée
+        // alors on ne les connecte pas car il y aura une salle qui interferera.
+
+        // pour chaque salle essayer de connecter avec toutes les autres salles pas encore parcourues
+            // lancer un sphereCast
+            // si le sphere Cast renvoie une tile de la room qu'on cherche alors on connecte
+            // sinon on ne connecte pas
+        
+        for (int i=0; i<posRoomsPlaced.Count; i++) {
+            for (int j=i+1; j<posRoomsPlaced.Count; j++) {
+                Vector3 dir = (GetCenter(j) - GetCenter(i)).normalized;
+                float distance = utils.Distance(GetCenter(i), GetCenter(j))-1;
+                RaycastHit[] hits;
+                hits = Physics.SphereCastAll(GetCenter(i), corridorWidthDetection, dir, distance);
+                if (hits.Length > 0 && HitsDetectedNotInRooms(hits, i, j)) 
+                {
+                    //Debug.DrawRay(GetCenter(i), dir * distance, Color.red, 100f);
+                } else {
+                    //Debug.DrawRay(GetCenter(i), dir * distance, Color.green, 100f);
+                    startPosCorridors.Add(GetCenter(i));
+                    endPosCorridors.Add(GetCenter(j));
+                }
+            }
+        }
+    }
+
+    bool HitsDetectedNotInRooms(RaycastHit[] hits, int indexRoomA, int indexRoomB) {
+        foreach (RaycastHit hit in hits)
+        {
+            GameObject hitObject = hit.collider.gameObject;
+            if (pathInstances.Contains(hitObject) && !PathInRoom(hitObject, indexRoomA) && !PathInRoom(hitObject, indexRoomB)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool PathInRoom(GameObject path, int roomIndex) {
+        if (roomIndex >= roomFirstTileIndex.Count-1) {
+            return pathInstances.IndexOf(path) >= roomFirstTileIndex[roomIndex];
+        }
+        return pathInstances.IndexOf(path) >= roomFirstTileIndex[roomIndex] && pathInstances.IndexOf(path) < roomFirstTileIndex[roomIndex+1];
+    }
 
 
 }

@@ -258,7 +258,7 @@ MonoBehaviour:
   minUpSize: 2
   maxUpSize: 10
   iterations: 2
-  nbRooms: 10
+  nbRooms: 20
   minPosX: 0
   maxPosX: 100
   minPosZ: 0
@@ -267,9 +267,11 @@ MonoBehaviour:
   maxSizeX: 20
   minSizeZ: 10
   maxSizeZ: 20
+  corridorWidthDetection: 3
   posRoomsPlaced: []
   sizeXPlaced: []
   sizeZPlaced: []
+  roomFirstTileIndex: 
   camera: {fileID: 963194227}
   pathInstances: []
   pathInstancesToCompute: []
