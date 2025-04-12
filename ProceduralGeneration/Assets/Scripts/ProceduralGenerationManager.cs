@@ -30,8 +30,9 @@ public class ProceduralGenerationManager : MonoBehaviour
     [Header("General Parameters:")]
     [SerializeField] [Tooltip("0: Directionnel ; 1: Pseudo Room placement")]
         int algorithm;
-    [SerializeField] [Tooltip("0 for random seed")]
+    [SerializeField]
         int seed;
+    [SerializeField] bool randomSeed;
     [SerializeField] bool visualize;
 
     [Header("Generation parameters")]
@@ -60,6 +61,7 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] int maxSizeX;
     [SerializeField] int minSizeZ;
     [SerializeField] int maxSizeZ;
+    [SerializeField] int margin;
     [SerializeField] float corridorWidthDetection;
     [SerializeField] List<Vector3> posRoomsPlaced = new();
     [SerializeField] List<float> sizeXPlaced = new();
@@ -67,6 +69,8 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] List<int> roomFirstTileIndex = new();
     [SerializeField] List<Vector3> startPosCorridors = new();
     [SerializeField] List<Vector3> endPosCorridors = new();
+    [SerializeField] List<Vector3> startPosCorridorsNull = new();
+    [SerializeField] List<Vector3> endPosCorridorsNull = new();
 
     [Header("Debug")]
     [SerializeField] new Camera camera;
@@ -103,7 +107,7 @@ public class ProceduralGenerationManager : MonoBehaviour
     {
         debut = Time.realtimeSinceStartup;
 
-        if (seed == 0)
+        if (randomSeed)
         {
             seed = Random.Range(0, int.MaxValue);
         }
@@ -115,11 +119,11 @@ public class ProceduralGenerationManager : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown("space")) {
-            // if (seed == 0)
-            // {
-            //     seed = Random.Range(0, int.MaxValue);
-            // }
-            // Random.seed = seed;
+            if (randomSeed)
+            {
+                seed = Random.Range(0, int.MaxValue);
+            }
+            Random.seed = seed;
             debut = Time.realtimeSinceStartup;
             DestroyPrecedent();
             StartCoroutine(StartGenerationCoroutine());
@@ -131,6 +135,13 @@ public class ProceduralGenerationManager : MonoBehaviour
         Gizmos.color = Color.green;
         for (int i=0; i<startPosCorridors.Count; i++) {
             Gizmos.DrawLine(startPosCorridors[i], endPosCorridors[i]);
+        }
+
+        if (visualize) {
+            Gizmos.color = Color.red;
+            for (int i=0; i<startPosCorridorsNull.Count; i++) {
+                Gizmos.DrawLine(startPosCorridorsNull[i], endPosCorridorsNull[i]);
+            }
         }
     }
 
@@ -155,14 +166,15 @@ public class ProceduralGenerationManager : MonoBehaviour
                 break;
 
             case 1:
-                PlaceRooms();
-                ConnectRooms();
+                StartCoroutine(PlaceRooms());
+                //StartCoroutine(ConnectRooms());
                 break;
 
             default:
                 print("Error: invalid algorithm index");
                 break;
         }
+        print("duration: " + (Time.realtimeSinceStartup - debut));
     }
 
     void DestroyPrecedent() {
@@ -176,6 +188,8 @@ public class ProceduralGenerationManager : MonoBehaviour
         roomFirstTileIndex.Clear();
         startPosCorridors.Clear();
         endPosCorridors.Clear();
+        startPosCorridorsNull.Clear();
+        endPosCorridorsNull.Clear();
     }
 
     // **************************** Directionnelle Generation **************************************
@@ -391,7 +405,7 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     // **************************** Pseudo Room Placement Generation **************************************
 
-    void PlaceRooms() {
+    IEnumerator PlaceRooms() {
         for (int i=0; i<nbRooms; i++) {
             Vector3 roomPos = new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
             float sizeX = Random.Range(minSizeX, maxSizeX);
@@ -403,9 +417,12 @@ public class ProceduralGenerationManager : MonoBehaviour
                 sizeZPlaced.Add(sizeZ);
 
                 PlaceRoomInstance(roomPos, sizeX, sizeZ);
+                if (visualize) {
+                    yield return null;
+                }
             }
         }
-        print("duration: " + (Time.realtimeSinceStartup - debut));
+        StartCoroutine(ConnectRooms());
     }
 
     bool RoomPlacementIsCorrect(Vector3 roomPos, float sizeX, float sizeZ) {
@@ -414,21 +431,21 @@ public class ProceduralGenerationManager : MonoBehaviour
             float currentSizeX = sizeXPlaced[i];
             float currentSizeZ = sizeZPlaced[i];
 
-            if (roomPos.x <= currentPos.x + currentSizeX && roomPos.x >= currentPos.x && 
-                roomPos.z <= currentPos.z + currentSizeZ && roomPos.z >= currentPos.z ||
-                roomPos.x + sizeX <= currentPos.x + currentSizeX && roomPos.x + sizeX >= currentPos.x &&
-                roomPos.z <= currentPos.z + currentSizeZ && roomPos.z >= currentPos.z ||
-                roomPos.x <= currentPos.x + currentSizeX && roomPos.x >= currentPos.x && 
-                roomPos.z + sizeZ <= currentPos.z + currentSizeZ && roomPos.z + sizeZ >= currentPos.z ||
-                roomPos.x + sizeX <= currentPos.x + currentSizeX && roomPos.x + sizeX >= currentPos.x &&
-                roomPos.z + sizeZ <= currentPos.z + currentSizeZ && roomPos.z + sizeZ >= currentPos.z ||
-                roomPos.x <= currentPos.x && roomPos.x + sizeX >= currentPos.x + currentSizeX &&
-                (roomPos.z <= currentPos.z + currentSizeZ && roomPos.z >= currentPos.z || 
-                roomPos.z + sizeZ <= currentPos.z + currentSizeZ && roomPos.z + sizeZ >= currentPos.z) ||
-                roomPos.x <= currentPos.x && roomPos.x + sizeX >= currentPos.x && 
-                roomPos.z <= currentPos.z && roomPos.z + sizeZ >= currentPos.z ||
-                roomPos.x >= currentPos.x && roomPos.x <= currentPos.x + currentSizeX && 
-                roomPos.z <= currentPos.z && roomPos.z + sizeZ >= currentPos.z) {
+            if (roomPos.x <= currentPos.x + currentSizeX + margin && roomPos.x >= currentPos.x && 
+                roomPos.z <= currentPos.z + currentSizeZ + margin && roomPos.z >= currentPos.z ||
+                roomPos.x + sizeX + margin <= currentPos.x + currentSizeX + margin && roomPos.x + sizeX + margin >= currentPos.x &&
+                roomPos.z <= currentPos.z + currentSizeZ + margin && roomPos.z >= currentPos.z ||
+                roomPos.x <= currentPos.x + currentSizeX + margin && roomPos.x >= currentPos.x && 
+                roomPos.z + sizeZ + margin <= currentPos.z + currentSizeZ + margin && roomPos.z + sizeZ + margin >= currentPos.z ||
+                roomPos.x + sizeX + margin <= currentPos.x + currentSizeX + margin && roomPos.x + sizeX + margin >= currentPos.x &&
+                roomPos.z + sizeZ + margin <= currentPos.z + currentSizeZ + margin && roomPos.z + sizeZ + margin >= currentPos.z ||
+                roomPos.x <= currentPos.x && roomPos.x + sizeX + margin >= currentPos.x + currentSizeX + margin &&
+                (roomPos.z <= currentPos.z + currentSizeZ + margin && roomPos.z >= currentPos.z || 
+                roomPos.z + sizeZ + margin <= currentPos.z + currentSizeZ + margin && roomPos.z + sizeZ >= currentPos.z) ||
+                roomPos.x <= currentPos.x && roomPos.x + sizeX + margin >= currentPos.x && 
+                roomPos.z <= currentPos.z && roomPos.z + sizeZ + margin >= currentPos.z ||
+                roomPos.x >= currentPos.x && roomPos.x <= currentPos.x + currentSizeX + margin && 
+                roomPos.z <= currentPos.z && roomPos.z + sizeZ + margin >= currentPos.z) {
 
                 return false;
             }
@@ -449,15 +466,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         return new Vector3(posRoomsPlaced[index].x + sizeXPlaced[index]/2, 0, posRoomsPlaced[index].z + sizeZPlaced[index]/2);
     }
 
-    void ConnectRooms() {
-        // essayer de connecter toutes les salles entre elles grâce à un sphereCast, si le sphereCast croise une autre room avant d'atteindre la room souhaitée
-        // alors on ne les connecte pas car il y aura une salle qui interferera.
-
-        // pour chaque salle essayer de connecter avec toutes les autres salles pas encore parcourues
-            // lancer un sphereCast
-            // si le sphere Cast renvoie une tile de la room qu'on cherche alors on connecte
-            // sinon on ne connecte pas
-        
+    IEnumerator ConnectRooms() {        
         for (int i=0; i<posRoomsPlaced.Count; i++) {
             for (int j=i+1; j<posRoomsPlaced.Count; j++) {
                 Vector3 dir = (GetCenter(j) - GetCenter(i)).normalized;
@@ -466,14 +475,20 @@ public class ProceduralGenerationManager : MonoBehaviour
                 hits = Physics.SphereCastAll(GetCenter(i), corridorWidthDetection, dir, distance);
                 if (hits.Length > 0 && HitsDetectedNotInRooms(hits, i, j)) 
                 {
-                    //Debug.DrawRay(GetCenter(i), dir * distance, Color.red, 100f);
+                    startPosCorridorsNull.Add(GetCenter(i));
+                    endPosCorridorsNull.Add(GetCenter(j));
                 } else {
-                    //Debug.DrawRay(GetCenter(i), dir * distance, Color.green, 100f);
                     startPosCorridors.Add(GetCenter(i));
                     endPosCorridors.Add(GetCenter(j));
                 }
+                if (visualize) {
+                    yield return null;
+                }
             }
         }
+        yield return null;
+        startPosCorridorsNull.Clear();
+        endPosCorridorsNull.Clear();
     }
 
     bool HitsDetectedNotInRooms(RaycastHit[] hits, int indexRoomA, int indexRoomB) {

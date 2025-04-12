@@ -247,7 +247,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   algorithm: 1
   seed: 0
-  visualize: 0
+  randomSeed: 1
+  visualize: 1
   pathLength: 500
   minDirectionLenght: 3
   maxDirectionLenght: 10
@@ -260,18 +261,23 @@ MonoBehaviour:
   iterations: 2
   nbRooms: 20
   minPosX: 0
-  maxPosX: 100
+  maxPosX: 150
   minPosZ: 0
-  maxPosZ: 110
+  maxPosZ: 400
   minSizeX: 10
-  maxSizeX: 20
+  maxSizeX: 15
   minSizeZ: 10
-  maxSizeZ: 20
-  corridorWidthDetection: 3
+  maxSizeZ: 15
+  margin: 20
+  corridorWidthDetection: 23
   posRoomsPlaced: []
   sizeXPlaced: []
   sizeZPlaced: []
   roomFirstTileIndex: 
+  startPosCorridors: []
+  endPosCorridors: []
+  startPosCorridorsNull: []
+  endPosCorridorsNull: []
   camera: {fileID: 963194227}
   pathInstances: []
   pathInstancesToCompute: []
@@ -418,7 +424,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5, y: -0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: 50, y: 200, z: 50}
+  m_LocalPosition: {x: 100, y: 250, z: 200}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
