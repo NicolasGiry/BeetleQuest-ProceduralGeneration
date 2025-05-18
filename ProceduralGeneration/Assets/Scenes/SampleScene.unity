@@ -248,7 +248,14 @@ MonoBehaviour:
   algorithm: 1
   seed: 0
   randomSeed: 1
-  visualize: 1
+  visualize: 0
+  materials:
+  - {fileID: 2100000, guid: a8b0c91234b51b04eaa418dc54ba7e38, type: 2}
+  - {fileID: 2100000, guid: 4ec94bfbfdf7a284483040c5a60251f8, type: 2}
+  - {fileID: 2100000, guid: ace5265016db9824d8ce3c78d31766f6, type: 2}
+  - {fileID: 2100000, guid: 30573dbf1662bf541a9177a50c67a80c, type: 2}
+  - {fileID: 2100000, guid: 3759f278bdf08d047af51aa423bfb97c, type: 2}
+  - {fileID: 2100000, guid: 3094c925343ab4e4b91f5d5c80e50df6, type: 2}
   pathLength: 500
   minDirectionLenght: 3
   maxDirectionLenght: 10
@@ -259,21 +266,18 @@ MonoBehaviour:
   minUpSize: 2
   maxUpSize: 10
   iterations: 2
-  nbRooms: 20
-  minPosX: 0
-  maxPosX: 150
+  nbRooms: 25
+  startRoomPos: {x: 0, y: 0, z: 0}
+  minPosX: -50
+  maxPosX: 50
   minPosZ: 0
-  maxPosZ: 400
+  maxPosZ: 50
   minSizeX: 10
   maxSizeX: 15
   minSizeZ: 10
   maxSizeZ: 15
   margin: 20
   corridorWidthDetection: 23
-  posRoomsPlaced: []
-  sizeXPlaced: []
-  sizeZPlaced: []
-  roomFirstTileIndex: 
   startPosCorridors: []
   endPosCorridors: []
   startPosCorridorsNull: []

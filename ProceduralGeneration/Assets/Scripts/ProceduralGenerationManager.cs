@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.NetworkInformation;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -34,6 +36,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         int seed;
     [SerializeField] bool randomSeed;
     [SerializeField] bool visualize;
+    [SerializeField] List<Material> materials = new();
 
     [Header("Generation parameters")]
     [SerializeField] int pathLength;
@@ -51,8 +54,9 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] int iterations;
 
     [Header("Pseudo Room Placement Parameters")]
-    [SerializeField] [Range(10, 200)]
+    [SerializeField] [Range(5, 200)]
         int nbRooms;
+    [SerializeField] Vector3 startRoomPos;
     [SerializeField] int minPosX;
     [SerializeField] int maxPosX;
     [SerializeField] int minPosZ;
@@ -63,16 +67,19 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] int maxSizeZ;
     [SerializeField] int margin;
     [SerializeField] float corridorWidthDetection;
-    [SerializeField] List<Vector3> posRoomsPlaced = new();
-    [SerializeField] List<float> sizeXPlaced = new();
-    [SerializeField] List<float> sizeZPlaced = new();
-    [SerializeField] List<int> roomFirstTileIndex = new();
+    //[SerializeField] List<Vector3> posRoomsPlaced = new();
+    [SerializeField] List<Room> roomsPlaced = new();
+    //[SerializeField] List<float> sizeXPlaced = new();
+    //[SerializeField] List<float> sizeZPlaced = new();
+    //[SerializeField] List<int> roomFirstTileIndex = new();
     [SerializeField] List<Vector3> startPosCorridors = new();
     [SerializeField] List<Vector3> endPosCorridors = new();
     [SerializeField] List<Vector3> startPosCorridorsNull = new();
     [SerializeField] List<Vector3> endPosCorridorsNull = new();
+    Room startRoom;
+    Room bossRoom;
 
-    [Header("Debug")]
+  [Header("Debug")]
     [SerializeField] new Camera camera;
     [SerializeField] List<GameObject> pathInstances = new();
         List<GameObject> pathInstancesTemp = new();
@@ -181,15 +188,22 @@ public class ProceduralGenerationManager : MonoBehaviour
         foreach(GameObject path in pathInstances) {
             Destroy(path);
         }
+        foreach (Room room in roomsPlaced)
+        {
+            room.OnDestroyRoom();
+        }
+        roomsPlaced.Clear();
+
         pathInstances.Clear();
-        posRoomsPlaced.Clear();
-        sizeXPlaced.Clear();
-        sizeZPlaced.Clear();
-        roomFirstTileIndex.Clear();
+        //posRoomsPlaced.Clear();
+        //sizeXPlaced.Clear();
+        //sizeZPlaced.Clear();
+        //roomFirstTileIndex.Clear();
         startPosCorridors.Clear();
         endPosCorridors.Clear();
         startPosCorridorsNull.Clear();
         endPosCorridorsNull.Clear();
+        
     }
 
     // **************************** Directionnelle Generation **************************************
@@ -406,109 +420,251 @@ public class ProceduralGenerationManager : MonoBehaviour
     // **************************** Pseudo Room Placement Generation **************************************
 
     IEnumerator PlaceRooms() {
-        for (int i=0; i<nbRooms; i++) {
-            Vector3 roomPos = new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
-            float sizeX = Random.Range(minSizeX, maxSizeX);
-            float sizeZ = Random.Range(minSizeZ, maxSizeZ);
 
-            if (RoomPlacementIsCorrect(roomPos, sizeX, sizeZ)) {
-                posRoomsPlaced.Add(roomPos);
-                sizeXPlaced.Add(sizeX);
-                sizeZPlaced.Add(sizeZ);
+        // générer la première salle toujours à la même position
+        startRoom = new Room(0, startRoomPos, new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ)));
+        PlaceRoomInstance(startRoom);
+        Room currentRoom = startRoom;
 
-                PlaceRoomInstance(roomPos, sizeX, sizeZ);
-                if (visualize) {
+        for (int i=1; i<nbRooms; i++) {
+            Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
+            Vector2 size = new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ));
+            Room room = new Room(roomsPlaced.Count, roomPos, size);
+
+            if  (CanBePlaced(room))
+            {
+                PlaceRoomInstance(room);
+                if (visualize)
+                {
                     yield return null;
                 }
+                ConnectRooms(currentRoom, room);
+                currentRoom = room;
             }
         }
-        StartCoroutine(ConnectRooms());
+        ConnectRooms();
     }
 
-    bool RoomPlacementIsCorrect(Vector3 roomPos, float sizeX, float sizeZ) {
-        for (int i=0; i<posRoomsPlaced.Count; i++) {
-            Vector3 currentPos = posRoomsPlaced[i];
-            float currentSizeX = sizeXPlaced[i];
-            float currentSizeZ = sizeZPlaced[i];
-
-            if (roomPos.x <= currentPos.x + currentSizeX + margin && roomPos.x >= currentPos.x && 
-                roomPos.z <= currentPos.z + currentSizeZ + margin && roomPos.z >= currentPos.z ||
-                roomPos.x + sizeX + margin <= currentPos.x + currentSizeX + margin && roomPos.x + sizeX + margin >= currentPos.x &&
-                roomPos.z <= currentPos.z + currentSizeZ + margin && roomPos.z >= currentPos.z ||
-                roomPos.x <= currentPos.x + currentSizeX + margin && roomPos.x >= currentPos.x && 
-                roomPos.z + sizeZ + margin <= currentPos.z + currentSizeZ + margin && roomPos.z + sizeZ + margin >= currentPos.z ||
-                roomPos.x + sizeX + margin <= currentPos.x + currentSizeX + margin && roomPos.x + sizeX + margin >= currentPos.x &&
-                roomPos.z + sizeZ + margin <= currentPos.z + currentSizeZ + margin && roomPos.z + sizeZ + margin >= currentPos.z ||
-                roomPos.x <= currentPos.x && roomPos.x + sizeX + margin >= currentPos.x + currentSizeX + margin &&
-                (roomPos.z <= currentPos.z + currentSizeZ + margin && roomPos.z >= currentPos.z || 
-                roomPos.z + sizeZ + margin <= currentPos.z + currentSizeZ + margin && roomPos.z + sizeZ >= currentPos.z) ||
-                roomPos.x <= currentPos.x && roomPos.x + sizeX + margin >= currentPos.x && 
-                roomPos.z <= currentPos.z && roomPos.z + sizeZ + margin >= currentPos.z ||
-                roomPos.x >= currentPos.x && roomPos.x <= currentPos.x + currentSizeX + margin && 
-                roomPos.z <= currentPos.z && roomPos.z + sizeZ + margin >= currentPos.z) {
-
+    bool CanBePlaced(Room room)
+    {
+        foreach (Room other in roomsPlaced)
+        {
+            if (other != room && room.Overlaps(other, margin))
+            {
                 return false;
             }
         }
         return true;
     }
 
-    void PlaceRoomInstance(Vector3 roomPos, float sizeX, float sizeZ) {
-        roomFirstTileIndex.Add(pathInstances.Count);
-        for (int x = (int) roomPos.x; x < roomPos.x + sizeX; x++) {
-            for (int z = (int) roomPos.z; z < roomPos.z + sizeZ; z++) {
-                pathInstances.Add(Instantiate(pathTile, new Vector3(x, 0, z), Quaternion.identity));
-            }
-        }
-    }
-
-    Vector3 GetCenter(int index) {
-        return new Vector3(posRoomsPlaced[index].x + sizeXPlaced[index]/2, 0, posRoomsPlaced[index].z + sizeZPlaced[index]/2);
-    }
-
-    IEnumerator ConnectRooms() {        
-        for (int i=0; i<posRoomsPlaced.Count; i++) {
-            for (int j=i+1; j<posRoomsPlaced.Count; j++) {
-                Vector3 dir = (GetCenter(j) - GetCenter(i)).normalized;
-                float distance = utils.Distance(GetCenter(i), GetCenter(j))-1;
-                RaycastHit[] hits;
-                hits = Physics.SphereCastAll(GetCenter(i), corridorWidthDetection, dir, distance);
-                if (hits.Length > 0 && HitsDetectedNotInRooms(hits, i, j)) 
-                {
-                    startPosCorridorsNull.Add(GetCenter(i));
-                    endPosCorridorsNull.Add(GetCenter(j));
-                } else {
-                    startPosCorridors.Add(GetCenter(i));
-                    endPosCorridors.Add(GetCenter(j));
-                }
-                if (visualize) {
-                    yield return null;
-                }
-            }
-        }
-        yield return null;
-        startPosCorridorsNull.Clear();
-        endPosCorridorsNull.Clear();
-    }
-
-    bool HitsDetectedNotInRooms(RaycastHit[] hits, int indexRoomA, int indexRoomB) {
-        foreach (RaycastHit hit in hits)
+    void PlaceRoomInstance(Room room)
+    {
+        List<GameObject> tiles = new();
+        for (int x = (int)room.GetPos().x; x < room.GetPos().x + room.GetSize().x; x++)
         {
-            GameObject hitObject = hit.collider.gameObject;
-            if (pathInstances.Contains(hitObject) && !PathInRoom(hitObject, indexRoomA) && !PathInRoom(hitObject, indexRoomB)) {
-                return true;
+            for (int z = (int)room.GetPos().z; z < room.GetPos().z + room.GetSize().y; z++)
+            {
+                tiles.Add(Instantiate(pathTile, new Vector3(x, 0, z), Quaternion.identity));
             }
         }
-
-        return false;
+        room.SetRoomTiles(tiles);
+        roomsPlaced.Add(room);
     }
 
-    bool PathInRoom(GameObject path, int roomIndex) {
-        if (roomIndex >= roomFirstTileIndex.Count-1) {
-            return pathInstances.IndexOf(path) >= roomFirstTileIndex[roomIndex];
+    Room GetLeftmost()
+    {
+        Room leftmost = roomsPlaced[0];
+        foreach(Room other in roomsPlaced)
+        {
+            if (other.GetPos().z < leftmost.GetPos().z)
+            {
+                leftmost = other;
+            }
         }
-        return pathInstances.IndexOf(path) >= roomFirstTileIndex[roomIndex] && pathInstances.IndexOf(path) < roomFirstTileIndex[roomIndex+1];
+        return leftmost;
+    }
+
+    Room GetRightmost()
+    {
+        Room rightmost = roomsPlaced[0];
+        foreach (Room other in roomsPlaced)
+        {
+            if (other.GetPos().z > rightmost.GetPos().z)
+            {
+                rightmost = other;
+            }
+        }
+        return rightmost;
+    }
+
+    Room FindClosestRoom(Room current, List<Room> rooms, bool free)
+    {
+        Room best = null;
+        float minDistance = float.MaxValue;
+        foreach (Room other in rooms)
+        {
+            float distance = utils.Distance(current.GetPos(), other.GetPos());
+            if (other.GetFree() == free && distance < minDistance) {
+                minDistance = distance;
+                best = other;
+            }
+        }
+        return best;
     }
 
 
+    private void ConnectRooms(Room a, Room b)
+    {
+        if (a.GetConnexions().Contains(b)) return;
+
+        a.AddConnexion(b);
+        b.AddConnexion(a);
+
+        startPosCorridors.Add(a.GetCenter());
+        endPosCorridors.Add(b.GetCenter());
+    }
+
+
+    void ConnectRooms() {
+        startRoom = GetLeftmost();
+        bossRoom = GetRightmost();
+
+        startRoom.SetRoomType(RoomType.Start);
+        bossRoom.SetRoomType(RoomType.Boss);
+        startRoom.SetFree(false);
+
+
+
+
+
+
+        //for (int i = 0; i < mainPath.Count - 1; i++)
+        //{
+        //    ConnectRooms(mainPath[i], mainPath[i + 1]);
+        //}
+
+
+        //List<Room> orderedPath = new List<Room>();
+        //List<Room> unvisited = new List<Room>(roomsPlaced);
+
+        //Room current = startRoom;
+        //orderedPath.Add(current);
+        //unvisited.Remove(current);
+
+        //while (unvisited.Count > 0)
+        //{
+        //    Room next = unvisited
+        //        .OrderBy(r => Vector2.Distance(current.GetCenter(), r.GetCenter()))
+        //        .First();
+
+        //    orderedPath.Add(next);
+        //    unvisited.Remove(next);
+
+        //    current.AddConnexion(next);
+        //    next.AddConnexion(current);
+        //    startPosCorridors.Add(current.GetCenter());
+        //    endPosCorridors.Add(next.GetCenter());
+
+        //    current = next;
+        //}
+
+
+
+
+
+
+
+
+
+        //List<Room> path = new List<Room>();
+        //Room current = startRoom;
+        //path.Add(current);
+
+        //while (current != bossRoom)
+        //{
+        //    current.SetFree(false);
+        //    Room next = FindClosestRoom(current, roomsPlaced, true);
+        //    if (next == null) break;
+        //    current.AddConnexion(next);
+        //    next.AddConnexion(current);
+        //    path.Add(next);
+        //    startPosCorridors.Add(current.GetCenter());
+        //    endPosCorridors.Add(next.GetCenter());
+
+        //    current = next;
+        //}
+
+        //// choose locked room
+
+        //int indexLockedRoom = Random.Range(0, path.Count-1);
+        //Room lockedRoom = path[indexLockedRoom];
+        //lockedRoom.SetRoomType(RoomType.Lock);
+
+        //foreach (Room salle in roomsPlaced)
+        //{
+        //    if (!path.Contains(salle))
+        //    {
+        //        Room candidate = FindClosestRoom(salle, path, false);
+        //        salle.AddConnexion(candidate);
+        //        candidate.AddConnexion(salle);
+        //        salle.SetFree(false);
+        //        path.Add(salle);
+        //        startPosCorridors.Add(salle.GetCenter());
+        //        endPosCorridors.Add(candidate.GetCenter());
+        //    }
+        //}
+
+        //yield return null;
+        ColorRooms();
+
+
+        //for (int i=0; i<posRoomsPlaced.Count; i++) {
+        //    for (int j=i+1; j<posRoomsPlaced.Count; j++) {
+        //        Vector3 dir = (GetCenter(j) - GetCenter(i)).normalized;
+        //        float distance = utils.Distance(GetCenter(i), GetCenter(j))-1;
+        //        RaycastHit[] hits;
+        //        hits = Physics.SphereCastAll(GetCenter(i), corridorWidthDetection, dir, distance);
+        //        if (hits.Length > 0 && HitsDetectedNotInRooms(hits, i, j)) 
+        //        {
+        //            startPosCorridorsNull.Add(GetCenter(i));
+        //            endPosCorridorsNull.Add(GetCenter(j));
+        //        } else {
+        //            startPosCorridors.Add(GetCenter(i));
+        //            endPosCorridors.Add(GetCenter(j));
+        //        }
+        //        if (visualize) {
+        //            yield return null;
+        //        }
+        //    }
+        //}
+        //yield return null;
+        //startPosCorridorsNull.Clear();
+        //endPosCorridorsNull.Clear();
+    }
+
+    void ColorRooms()
+    {
+        foreach (Room room in roomsPlaced)
+        {
+            room.ColorRoom(materials);
+        }
+    }
+
+    //bool HitsDetectedNotInRooms(RaycastHit[] hits, int indexRoomA, int indexRoomB) {
+    //    foreach (RaycastHit hit in hits)
+    //    {
+    //        GameObject hitObject = hit.collider.gameObject;
+    //        if (pathInstances.Contains(hitObject) && !PathInRoom(hitObject, indexRoomA) && !PathInRoom(hitObject, indexRoomB)) {
+    //            return true;
+    //        }
+    //    }
+    //    return false;
+    //}
+
+    //bool PathInRoom(GameObject path, int roomIndex) {
+    //    if (roomIndex >= roomFirstTileIndex.Count-1) {
+    //        return pathInstances.IndexOf(path) >= roomFirstTileIndex[roomIndex];
+    //    }
+    //    return pathInstances.IndexOf(path) >= roomFirstTileIndex[roomIndex] && pathInstances.IndexOf(path) < roomFirstTileIndex[roomIndex+1];
+    //}
 }
