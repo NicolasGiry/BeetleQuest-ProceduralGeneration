@@ -245,88 +245,42 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ceb4a3599e691ae4f8a8f013a41b125f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  algorithm: 1
   seed: 0
   randomSeed: 1
-  visualize: 0
+  visualize: 1
   materials:
   - {fileID: 2100000, guid: a8b0c91234b51b04eaa418dc54ba7e38, type: 2}
   - {fileID: 2100000, guid: 4ec94bfbfdf7a284483040c5a60251f8, type: 2}
-  - {fileID: 2100000, guid: ace5265016db9824d8ce3c78d31766f6, type: 2}
   - {fileID: 2100000, guid: 30573dbf1662bf541a9177a50c67a80c, type: 2}
-  - {fileID: 2100000, guid: 3759f278bdf08d047af51aa423bfb97c, type: 2}
+  - {fileID: 2100000, guid: ace5265016db9824d8ce3c78d31766f6, type: 2}
+  - {fileID: 2100000, guid: 4bfd350951839d640984349e126b4ae3, type: 2}
   - {fileID: 2100000, guid: 3094c925343ab4e4b91f5d5c80e50df6, type: 2}
-  pathLength: 500
-  minDirectionLenght: 3
-  maxDirectionLenght: 10
-  arrondissement: 1
-  minBeforeUp: 50
-  maxBeforeUp: 100
-  maxNumberOfRaises: 5
-  minUpSize: 2
-  maxUpSize: 10
-  iterations: 2
-  nbRooms: 25
-  startRoomPos: {x: 0, y: 0, z: 0}
-  minPosX: -50
-  maxPosX: 50
+  nbRooms: 15
+  startRoomPos: {x: 100, y: 0, z: 0}
+  minPosX: -35
+  maxPosX: 35
   minPosZ: 0
   maxPosZ: 50
   minSizeX: 10
   maxSizeX: 15
   minSizeZ: 10
   maxSizeZ: 15
-  margin: 20
-  corridorWidthDetection: 23
+  minSecondaryPathLenght: 2
+  maxSecondaryPathLenght: 5
+  margin: 17
+  nbLock: 1
   startPosCorridors: []
   endPosCorridors: []
   startPosCorridorsNull: []
   endPosCorridorsNull: []
   camera: {fileID: 963194227}
   pathInstances: []
-  pathInstancesToCompute: []
-  currentTileLocation: {x: 0, y: 0, z: 0}
-  directionsChosed: 
   pathTile: {fileID: 3616079413948901850, guid: 659ce7c115b223d4489f91e63020b3be, type: 3}
   grassTile: {fileID: 7991294564538234262, guid: c0d77306d11f12c48aa0f66a8ef17785, type: 3}
   slopePathTile: {fileID: 4771004885531943384, guid: 1c9abb0ae004a3640833a5a5cf057889, type: 3}
   slopeGrassTile: {fileID: 1223767030776490023, guid: bd748700366d8da4d9f05260bea80bf6, type: 3}
   cliffTile: {fileID: 7447485330308854112, guid: c3409e67b0eba454ea3af1c59120e9cf, type: 3}
   ladderTile: {fileID: 0}
-  directionsTab:
-  - {x: 0, y: 1, z: 0}
-  - {x: 0, y: -1, z: 0}
-  - {x: 0, y: 0, z: 2}
-  - {x: 0, y: 0, z: -2}
-  - {x: 2, y: 0, z: 0}
-  - {x: -2, y: 0, z: 0}
-  neighborsPositions:
-  - {x: -2, y: -0.5, z: 2}
-  - {x: 0, y: -0.5, z: 2}
-  - {x: 2, y: -0.5, z: 2}
-  - {x: 2, y: -0.5, z: 0}
-  - {x: 0, y: -0.5, z: 0}
-  - {x: -2, y: -0.5, z: 0}
-  - {x: -2, y: -0.5, z: -2}
-  - {x: 0, y: -0.5, z: -2}
-  - {x: 2, y: -0.5, z: -2}
-  - {x: -2, y: 0, z: 2}
-  - {x: 0, y: 0, z: 2}
-  - {x: 2, y: 0, z: 2}
-  - {x: 2, y: 0, z: 0}
-  - {x: -2, y: 0, z: 0}
-  - {x: -2, y: 0, z: -2}
-  - {x: 0, y: 0, z: -2}
-  - {x: 2, y: 0, z: -2}
-  - {x: -2, y: 1, z: 2}
-  - {x: 0, y: 1, z: 2}
-  - {x: 2, y: 1, z: 2}
-  - {x: 2, y: 1, z: 0}
-  - {x: 0, y: 1, z: 0}
-  - {x: -2, y: 1, z: 0}
-  - {x: -2, y: 1, z: -2}
-  - {x: 0, y: 1, z: -2}
-  - {x: 2, y: 1, z: -2}
 --- !u!4 &791072441
 Transform:
   m_ObjectHideFlags: 0
@@ -428,7 +382,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: 0.5, y: -0.5, z: 0.5, w: 0.5}
-  m_LocalPosition: {x: 100, y: 250, z: 200}
+  m_LocalPosition: {x: 100, y: 375, z: 300}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

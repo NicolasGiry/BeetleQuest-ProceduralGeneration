@@ -1,9 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using UnityEngine.UIElements;
-using System;
-using UnityEditor;
-using Unity.VisualScripting.FullSerializer;
 
 public enum RoomType
 {
@@ -11,7 +7,8 @@ public enum RoomType
     Boss,
     Key,
     Lock,
-    Basic
+    Principal,
+    Secondary
 }
 
 public class Room
@@ -24,7 +21,7 @@ public class Room
     List<GameObject> tiles = new();
     bool free = true;
 
-    public Room(int id, Vector3 pos, Vector2 size, RoomType type = RoomType.Basic)
+    public Room(int id, Vector3 pos, Vector2 size, RoomType type = RoomType.Principal)
     {
         this.id = id;
         this.pos = pos;
