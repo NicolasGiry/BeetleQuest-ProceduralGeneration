@@ -66,9 +66,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 2ebb6ac567955ba4e864dcd7c83df20b, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4683004120358059356}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 2ebb6ac567955ba4e864dcd7c83df20b, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 6287422136906083762}
   m_SourcePrefab: {fileID: 100100000, guid: 2ebb6ac567955ba4e864dcd7c83df20b, type: 3}
 --- !u!1 &3616079413948901850 stripped
@@ -76,24 +73,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 2ebb6ac567955ba4e864dcd7c83df20b, type: 3}
   m_PrefabInstance: {fileID: 4534998108463682699}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4683004120358059356
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3616079413948901850}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4ad98a78afe1e41469d0bc15b1bbe0f3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  neighbors: []
-  detectionRadius: 1.8
-  tileLayer:
-    serializedVersion: 2
-    m_Bits: 1
-  offset: {x: 0, y: 0.75, z: 0}
 --- !u!64 &6287422136906083762
 MeshCollider:
   m_ObjectHideFlags: 0

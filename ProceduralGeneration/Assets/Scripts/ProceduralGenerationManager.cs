@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-
 public class ProceduralGenerationManager : MonoBehaviour
 {
     [Header("General Parameters:")]
@@ -48,6 +47,13 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] GameObject slopeGrassTile;
     [SerializeField] GameObject cliffTile;
     [SerializeField] GameObject ladderTile;
+
+    [Header("Rooms Prefabs")]
+    [SerializeField] List<GameObject> startRooms;
+    [SerializeField] List<GameObject> bossRooms;
+    [SerializeField] List<GameObject> keyRooms;
+    [SerializeField] List<GameObject> lockedRooms;
+    [SerializeField] List<GameObject> basicRooms;
 
     Utils utils = new();
     float debut;
@@ -122,7 +128,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         // générer la première salle tjrs à la même position
         startRoom = new Room(0, startRoomPos, new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ)));
         startRoom.SetRoomType(RoomType.Start);
-        PlaceRoomInstance(startRoom);
+        roomsPlaced.Add(startRoom);
         Room currentRoom = startRoom;
 
         for (int i=1; i<nbRooms; i++) {
@@ -131,7 +137,8 @@ public class ProceduralGenerationManager : MonoBehaviour
             Room room = new Room(roomsPlaced.Count, roomPos, size);
             if  (CanBePlaced(room))
             {
-                PlaceRoomInstance(room);
+                //PlaceRoomInstance(room);
+                roomsPlaced.Add(room);
                 if (visualize)
                 {
                     yield return null;
@@ -146,6 +153,10 @@ public class ProceduralGenerationManager : MonoBehaviour
         {
             StartCoroutine(AddLockedRoomAndKey());
         }
+        foreach (Room room in roomsPlaced)
+        {
+            PlaceRoomInstance(room);
+        }
     }
 
     IEnumerator AddLockedRoomAndKey()
@@ -155,9 +166,9 @@ public class ProceduralGenerationManager : MonoBehaviour
 
         if (candidates.Count > 0)
         {
-            lockedRoom = candidates[Random.Range(0, candidates.Count)];
+            lockedRoom = candidates[Random.Range(1, candidates.Count)];
             lockedRoom.SetRoomType(RoomType.Lock);
-            Room currentRoom = roomsPlaced[Random.Range(1, lockedRoom.GetId() - 1)];
+            Room currentRoom = roomsPlaced[Random.Range(1, lockedRoom.GetId() - 2)];
 
             int pathLenght = Random.Range(minSecondaryPathLenght, maxSecondaryPathLenght);
             int iteration = 0;
@@ -169,7 +180,8 @@ public class ProceduralGenerationManager : MonoBehaviour
                 room.SetRoomType(RoomType.Secondary);
                 if (CanBePlaced(room))
                 {
-                    PlaceRoomInstance(room);
+                    //PlaceRoomInstance(room);
+                    roomsPlaced.Add(room);
                     if (visualize)
                     {
                         yield return null;
@@ -206,15 +218,38 @@ public class ProceduralGenerationManager : MonoBehaviour
     void PlaceRoomInstance(Room room)
     {
         List<GameObject> tiles = new();
-        for (int x = (int)room.GetPos().x; x < room.GetPos().x + room.GetSize().x; x++)
+        switch (room.GetRoomType())
         {
-            for (int z = (int)room.GetPos().z; z < room.GetPos().z + room.GetSize().y; z++)
-            {
-                tiles.Add(Instantiate(pathTile, new Vector3(x, 0, z), Quaternion.identity));
-            }
+            case RoomType.Start:
+                tiles.Add(Instantiate(startRooms[Random.Range(0, startRooms.Count-1)], room.GetPos(), Quaternion.identity)); 
+                break;
+            case RoomType.Boss:
+                tiles.Add(Instantiate(bossRooms[Random.Range(0, bossRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                break;
+            case RoomType.Key:
+                tiles.Add(Instantiate(keyRooms[Random.Range(0, keyRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                break;
+            case RoomType.Lock:
+                tiles.Add(Instantiate(lockedRooms[Random.Range(0, lockedRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                break;
+            case RoomType.Principal: case RoomType.Secondary:
+                tiles.Add(Instantiate(basicRooms[Random.Range(0, basicRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                break;
         }
+
         room.SetRoomTiles(tiles);
-        roomsPlaced.Add(room);
+        //roomsPlaced.Add(room);
+
+        //List<GameObject> tiles = new();
+        //for (int x = (int)room.GetPos().x; x < room.GetPos().x + room.GetSize().x; x++)
+        //{
+        //    for (int z = (int)room.GetPos().z; z < room.GetPos().z + room.GetSize().y; z++)
+        //    {
+        //        tiles.Add(Instantiate(pathTile, new Vector3(x, 0, z), Quaternion.identity));
+        //    }
+        //}
+        //room.SetRoomTiles(tiles);
+        //roomsPlaced.Add(room);
     }
 
     private void ConnectRooms(Room a, Room b)
