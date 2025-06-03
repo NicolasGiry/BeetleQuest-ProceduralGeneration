@@ -20,6 +20,8 @@ public class Room
     List<Room> connexions = new();
     List<GameObject> tiles = new();
     bool free = true;
+    public Vector3 startOffset = new Vector3(-11, 0, -10);
+    public Vector3 endOffset = new Vector3(-11, 0, 3);
 
     public Room(int id, Vector3 pos, Vector2 size, RoomType type = RoomType.Principal)
     {
@@ -36,6 +38,14 @@ public class Room
     public Vector3 GetPos()
     {
         return pos;
+    }
+    public Vector3 GetStartPos()
+    {
+        return GetCenter() + startOffset;
+    }
+    public Vector3 GetEndPos()
+    {
+        return GetCenter() + endOffset;
     }
     public Vector2 GetSize()
     {
@@ -69,7 +79,6 @@ public class Room
     {
         this.tiles = tiles;
     }
-
     public void OnDestroyRoom()
     {
         foreach (GameObject tile in tiles)

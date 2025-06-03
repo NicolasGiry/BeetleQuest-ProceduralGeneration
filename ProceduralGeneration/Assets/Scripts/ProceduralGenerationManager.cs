@@ -221,19 +221,19 @@ public class ProceduralGenerationManager : MonoBehaviour
         switch (room.GetRoomType())
         {
             case RoomType.Start:
-                tiles.Add(Instantiate(startRooms[Random.Range(0, startRooms.Count-1)], room.GetPos(), Quaternion.identity)); 
+                tiles.Add(Instantiate(startRooms[Random.Range(0, startRooms.Count)], room.GetPos(), Quaternion.identity)); 
                 break;
             case RoomType.Boss:
-                tiles.Add(Instantiate(bossRooms[Random.Range(0, bossRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                tiles.Add(Instantiate(bossRooms[Random.Range(0, bossRooms.Count)], room.GetPos(), Quaternion.identity));
                 break;
             case RoomType.Key:
-                tiles.Add(Instantiate(keyRooms[Random.Range(0, keyRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                tiles.Add(Instantiate(keyRooms[Random.Range(0, keyRooms.Count)], room.GetPos(), Quaternion.identity));
                 break;
             case RoomType.Lock:
-                tiles.Add(Instantiate(lockedRooms[Random.Range(0, lockedRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                tiles.Add(Instantiate(lockedRooms[Random.Range(0, lockedRooms.Count)], room.GetPos(), Quaternion.identity));
                 break;
             case RoomType.Principal: case RoomType.Secondary:
-                tiles.Add(Instantiate(basicRooms[Random.Range(0, basicRooms.Count - 1)], room.GetPos(), Quaternion.identity));
+                tiles.Add(Instantiate(basicRooms[Random.Range(0, basicRooms.Count)], room.GetPos(), Quaternion.identity));
                 break;
         }
 
@@ -257,8 +257,8 @@ public class ProceduralGenerationManager : MonoBehaviour
         if (a.GetConnexions().Contains(b)) return;
         a.AddConnexion(b);
         b.AddConnexion(a);
-        startPosCorridors.Add(a.GetCenter());
-        endPosCorridors.Add(b.GetCenter());
+        startPosCorridors.Add(a.GetEndPos());
+        endPosCorridors.Add(b.GetStartPos());
     }
 
     void ColorRooms()

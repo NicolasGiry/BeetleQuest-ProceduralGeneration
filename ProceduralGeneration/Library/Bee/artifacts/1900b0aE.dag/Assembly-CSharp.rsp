@@ -399,8 +399,12 @@
 -analyzer:"E:/Unity/Installs/Unity/Hub/Editor/6000.0.43f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.SourceGenerators.dll"
 -analyzer:"E:/Unity/Installs/Unity/Hub/Editor/6000.0.43f1/Editor/Data/Tools/Unity.SourceGenerators/Unity.UIToolkit.SourceGenerator.dll"
 "Assets/Scripts/CameraFollow.cs"
+"Assets/Scripts/MapDisplay.cs"
+"Assets/Scripts/MapGenerator.cs"
+"Assets/Scripts/Noise.cs"
 "Assets/Scripts/PlayerMovement.cs"
 "Assets/Scripts/ProceduralGenerationManager.cs"
+"Assets/Scripts/ProceduralGeometry.cs"
 "Assets/Scripts/Room.cs"
 "Assets/Scripts/Utils.cs"
 -langversion:9.0
