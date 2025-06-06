@@ -3,6 +3,8 @@ using UnityEngine;
 public class MapDisplay : MonoBehaviour
 {
     [SerializeField] Renderer textureRenderer;
+    [SerializeField] MeshFilter meshFilter;
+    [SerializeField] MeshRenderer meshRenderer;
 
     public void DrawNoiseMap(float[,] noiseMap)
     {
@@ -26,5 +28,11 @@ public class MapDisplay : MonoBehaviour
 
         textureRenderer.sharedMaterial.mainTexture = texture;
         textureRenderer.transform.localScale = new Vector3(width, 1, height);
+    }
+
+    public void DrawMesh(MeshData meshData)
+    {
+        meshFilter.sharedMesh = meshData.CreateMesh();
+
     }
 }

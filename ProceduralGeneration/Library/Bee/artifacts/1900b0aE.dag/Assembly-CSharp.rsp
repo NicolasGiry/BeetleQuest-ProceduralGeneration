@@ -401,6 +401,7 @@
 "Assets/Scripts/CameraFollow.cs"
 "Assets/Scripts/MapDisplay.cs"
 "Assets/Scripts/MapGenerator.cs"
+"Assets/Scripts/MeshGenerator.cs"
 "Assets/Scripts/Noise.cs"
 "Assets/Scripts/PlayerMovement.cs"
 "Assets/Scripts/ProceduralGenerationManager.cs"
