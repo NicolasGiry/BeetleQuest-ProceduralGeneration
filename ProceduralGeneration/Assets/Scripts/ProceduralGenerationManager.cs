@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 public class ProceduralGenerationManager : MonoBehaviour
 {
@@ -54,6 +55,8 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] List<GameObject> keyRooms;
     [SerializeField] List<GameObject> lockedRooms;
     [SerializeField] List<GameObject> basicRooms;
+
+    [SerializeField] MeshFilter terrain;
 
     Utils utils = new();
     float debut;
@@ -126,7 +129,11 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     IEnumerator PlaceRooms() {
         // générer la première salle tjrs à la même position
-        startRoom = new Room(0, startRoomPos, new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ)));
+        Mesh mesh = terrain.mesh;
+        Vector3[] vertices = mesh.vertices;
+        Vector3 closestVertex = FindClosestVertex(startRoomPos);
+
+        startRoom = new Room(0, closestVertex, new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ)));
         startRoom.SetRoomType(RoomType.Start);
         roomsPlaced.Add(startRoom);
         Room currentRoom = startRoom;
@@ -134,7 +141,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         for (int i=1; i<nbRooms; i++) {
             Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
             Vector2 size = new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ));
-            Room room = new Room(roomsPlaced.Count, roomPos, size);
+            Room room = new Room(roomsPlaced.Count, FindClosestVertex(roomPos), size);
             if  (CanBePlaced(room))
             {
                 //PlaceRoomInstance(room);
@@ -159,6 +166,30 @@ public class ProceduralGenerationManager : MonoBehaviour
         }
     }
 
+    Vector3 FindClosestVertex(Vector3 targetPos)
+    {
+        Mesh mesh = terrain.mesh;
+        Vector3[] vertices = mesh.vertices;
+        Vector3 closestVertex = Vector3.zero;
+
+        float minDistance = Mathf.Infinity;
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            // Convertit la position du vertex en coordonnées mondiales
+            Vector3 worldPos = transform.TransformPoint(vertices[i]);
+            float distance = Vector3.Distance(targetPos, worldPos);
+
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                closestVertex = worldPos;
+            }
+        }
+        print(closestVertex);
+        return closestVertex + new Vector3(0, -1f, 0);
+    }
+
     IEnumerator AddLockedRoomAndKey()
     {
         Room lockedRoom;
@@ -176,7 +207,7 @@ public class ProceduralGenerationManager : MonoBehaviour
             {
                 Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
                 Vector2 size = new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ));
-                Room room = new Room(roomsPlaced.Count, roomPos, size);
+                Room room = new Room(roomsPlaced.Count, FindClosestVertex(roomPos), size);
                 room.SetRoomType(RoomType.Secondary);
                 if (CanBePlaced(room))
                 {

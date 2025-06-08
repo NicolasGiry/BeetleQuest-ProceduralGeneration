@@ -9,8 +9,9 @@ public class MapGenerator : MonoBehaviour
     };
 
     //[SerializeField] DrawMode drawMode;
-    [SerializeField][Range(1, 1024)] int mapWidth;
-    [SerializeField][Range(1, 1024)] int mapHeight;
+    const int mapChunkSize = 241;
+    [SerializeField] [Range(0,6)] int lod;
+
     [SerializeField][Range(0.011f,100)] float noiseScale;
     [SerializeField] int octaves;
     [SerializeField][Range(0,1)] float persistance;
@@ -23,11 +24,11 @@ public class MapGenerator : MonoBehaviour
 
     public void GenerateMap()
     {
-        float[,] noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight, seed, noiseScale, octaves, persistance, lacunarity, offset);
+        float[,] noiseMap = Noise.GenerateNoiseMap(mapChunkSize, mapChunkSize, seed, noiseScale, octaves, persistance, lacunarity, offset);
 
         MapDisplay mapDisplay = FindAnyObjectByType<MapDisplay>();
 
         mapDisplay.DrawNoiseMap(noiseMap);
-        mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, heightMultiplier, heightCurve));        
+        mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, heightMultiplier, heightCurve, lod));        
     }
 }

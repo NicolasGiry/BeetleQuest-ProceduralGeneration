@@ -405,7 +405,6 @@
 "Assets/Scripts/Noise.cs"
 "Assets/Scripts/PlayerMovement.cs"
 "Assets/Scripts/ProceduralGenerationManager.cs"
-"Assets/Scripts/ProceduralGeometry.cs"
 "Assets/Scripts/Room.cs"
 "Assets/Scripts/Utils.cs"
 -langversion:9.0
