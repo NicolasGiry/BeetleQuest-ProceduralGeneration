@@ -20,6 +20,7 @@ public class Room
     List<Room> connexions = new();
     List<GameObject> tiles = new();
     bool free = true;
+    Vector3[] roomCorners = new Vector3[4];
     public Vector3 startOffset = new Vector3(-11, 0, -10);
     public Vector3 endOffset = new Vector3(-11, 0, 3);
 
@@ -29,6 +30,10 @@ public class Room
         this.pos = pos;
         this.size = size;
         this.type = type;
+        roomCorners[0] = new Vector3(pos.x - (size.x / 2f), pos.y, pos.z - (size.y / 2f));
+        roomCorners[1] = new Vector3(pos.x - (size.x / 2f), pos.y, pos.z + (size.y / 2f));
+        roomCorners[2] = new Vector3(pos.x + (size.x / 2f), pos.y, pos.z - (size.y / 2f));
+        roomCorners[3] = new Vector3(pos.x + (size.x / 2f), pos.y, pos.z + (size.y / 2f));
     }
 
     public int GetId()
@@ -66,6 +71,10 @@ public class Room
     public bool GetFree()
     {
         return free;
+    }
+    public Vector3[] GetRoomCorners()
+    {
+        return roomCorners;
     }
     public void SetFree(bool free)
     {

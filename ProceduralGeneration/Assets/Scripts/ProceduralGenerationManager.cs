@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
+using UnityEngine.XR;
 using static UnityEngine.GraphicsBuffer;
 
 public class ProceduralGenerationManager : MonoBehaviour
@@ -25,6 +27,7 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] int maxSizeX;
     [SerializeField] int minSizeZ;
     [SerializeField] int maxSizeZ;
+    [SerializeField] float heightRoomOffset;
     [SerializeField] int minSecondaryPathLenght;
     [SerializeField] int maxSecondaryPathLenght;
     [SerializeField] int margin;
@@ -56,7 +59,17 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] List<GameObject> lockedRooms;
     [SerializeField] List<GameObject> basicRooms;
 
+
+    [Header("Terrain")]
     [SerializeField] MeshFilter terrain;
+    [SerializeField] float roomRadius;
+    [SerializeField] float flatThreshold;
+    [SerializeField] List<Vector3> possibleRoomsPlacement = new();
+    [SerializeField] Vector3 anchorPos;
+    [SerializeField] int terrainSize = 500;
+
+    List<Vector3> cornerPos = new();
+    List<Vector3> roomCheckPos = new();
 
     Utils utils = new();
     float debut;
@@ -95,6 +108,18 @@ public class ProceduralGenerationManager : MonoBehaviour
             Gizmos.DrawLine(startPosCorridors[i], endPosCorridors[i]);
         }
 
+        Gizmos.color = Color.red;
+        for (int i = 0; i < cornerPos.Count; i++)
+        {
+            Gizmos.DrawSphere(cornerPos[i] + new Vector3(0, heightRoomOffset, 0), 0.25f);
+        }
+
+        for (int i = 0; i < roomCheckPos.Count; i++)
+        {
+            Gizmos.DrawSphere(roomCheckPos[i], roomRadius / 2);
+        }
+
+
         if (visualize) {
             Gizmos.color = Color.red;
             for (int i=0; i<startPosCorridorsNull.Count; i++) {
@@ -105,7 +130,8 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     void StartGeneration()
     {
-        StartCoroutine(PlaceRooms());
+        //StartCoroutine(PlaceRooms());
+        FindPossibleRoomsPlacement();
         print("duration: " + (Time.realtimeSinceStartup - debut));
     }
 
@@ -123,11 +149,77 @@ public class ProceduralGenerationManager : MonoBehaviour
         endPosCorridors.Clear();
         startPosCorridorsNull.Clear();
         endPosCorridorsNull.Clear();
+        cornerPos.Clear();
+        roomCheckPos.Clear();
     }
 
     // **************************** Pseudo Room Placement Generation **************************************
 
+    IEnumerator PlaceRoomsOnTerrain()
+    {
+        for (int i = 0; i < nbRooms; i++)
+        {
+
+
+
+
+            if (visualize)
+            {
+                yield return null;
+            }
+        }
+    }
+
+    void FindPossibleRoomsPlacement()
+    {
+        // conditions pour que pos soit gardée : 
+        //      - pos + rayonMin est plat (+- flatThreshold)
+        //      - 
+
+        Vector3 currentPos = FindClosestVertex(anchorPos + new Vector3(roomRadius, 0, roomRadius));
+
+        for (int i = 0; i < terrainSize / roomRadius; i++)
+        {
+            for (int j = 0; j < terrainSize / roomRadius; j++)
+            {
+                if (IsZoneFlat(currentPos))
+                {
+                    possibleRoomsPlacement.Add(currentPos);
+                    roomCheckPos.Add(currentPos);
+                }
+                currentPos = FindClosestVertex(currentPos + new Vector3(0, 0, roomRadius));
+            }
+            currentPos = FindClosestVertex(currentPos + new Vector3(roomRadius, 0, 0));
+            currentPos.z = anchorPos.z + roomRadius;
+        }
+    }
+
+    bool IsZoneFlat(Vector3 pos)
+    {
+        Mesh terrainMesh = terrain.sharedMesh;
+        Vector3[] vertices = terrainMesh.vertices;
+        Transform terrainTransform = terrain.transform;
+        print("début pos: " + pos);
+        foreach (Vector3 v in vertices)
+        {
+            Vector3 worldV = terrainTransform.TransformPoint(v);
+            //if (Vector2.Distance(new Vector2(worldV.x, worldV.z), new Vector2(pos.x, pos.z)) < roomRadius)
+            if (Vector3.Distance(pos, v) < roomRadius)
+            {
+                //print("pos: " + pos + " | posVertex: " + v + " | distance: " + Vector3.Distance(pos, v) + " | flatDifference: " + Mathf.Abs(v.y - pos.y));
+                if (Mathf.Abs(pos.y - v.y) > flatThreshold)
+                {
+                    print("pas plat");
+                    return false;
+                }
+            }
+        }
+        print("PLAT");
+        return true;
+    }
+
     IEnumerator PlaceRooms() {
+        
         // générer la première salle tjrs à la même position
         Mesh mesh = terrain.mesh;
         Vector3[] vertices = mesh.vertices;
@@ -139,7 +231,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         Room currentRoom = startRoom;
 
         for (int i=1; i<nbRooms; i++) {
-            Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
+            Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), heightRoomOffset, Random.Range(minPosZ, maxPosZ));
             Vector2 size = new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ));
             Room room = new Room(roomsPlaced.Count, FindClosestVertex(roomPos), size);
             if  (CanBePlaced(room))
@@ -168,26 +260,51 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     Vector3 FindClosestVertex(Vector3 targetPos)
     {
-        Mesh mesh = terrain.mesh;
+        Mesh mesh = terrain.sharedMesh;
         Vector3[] vertices = mesh.vertices;
+        Transform terrainTransform = terrain.transform;
+
         Vector3 closestVertex = Vector3.zero;
+        float minDist2D = Mathf.Infinity;
 
-        float minDistance = Mathf.Infinity;
-
-        for (int i = 0; i < vertices.Length; i++)
+        foreach (Vector3 v in vertices)
         {
-            // Convertit la position du vertex en coordonnées mondiales
-            Vector3 worldPos = transform.TransformPoint(vertices[i]);
-            float distance = Vector3.Distance(targetPos, worldPos);
+            Vector3 worldV = terrainTransform.TransformPoint(v);
 
-            if (distance < minDistance)
+            // Calcul uniquement sur XZ
+            float distXZ = Vector2.Distance(
+                new Vector2(worldV.x, worldV.z),
+                new Vector2(targetPos.x, targetPos.z)
+            );
+
+            if (distXZ < minDist2D)
             {
-                minDistance = distance;
-                closestVertex = worldPos;
+                minDist2D = distXZ;
+                closestVertex = worldV;
             }
         }
-        print(closestVertex);
-        return closestVertex + new Vector3(0, -1f, 0);
+
+        return closestVertex;
+        //Mesh mesh = terrain.mesh;
+        //Vector3[] vertices = mesh.vertices;
+        //Vector3 closestVertex = Vector3.zero;
+
+        //float minDistance = Mathf.Infinity;
+
+        //for (int i = 0; i < vertices.Length; i++)
+        //{
+        //    // Convertit la position du vertex en coordonnées mondiales
+        //    Vector3 worldPos = transform.TransformPoint(vertices[i]);
+        //    float distance = Vector3.Distance(targetPos, worldPos);
+
+        //    if (distance < minDistance)
+        //    {
+        //        minDistance = distance;
+        //        closestVertex = worldPos;
+        //    }
+        //}
+        //print(closestVertex);
+        //return closestVertex;
     }
 
     IEnumerator AddLockedRoomAndKey()
@@ -205,7 +322,7 @@ public class ProceduralGenerationManager : MonoBehaviour
             int iteration = 0;
             for (int i = 0; i < pathLenght && iteration < pathLenght * 100; i++, iteration++)
             {
-                Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), 0, Random.Range(minPosZ, maxPosZ));
+                Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), heightRoomOffset, Random.Range(minPosZ, maxPosZ));
                 Vector2 size = new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ));
                 Room room = new Room(roomsPlaced.Count, FindClosestVertex(roomPos), size);
                 room.SetRoomType(RoomType.Secondary);
@@ -267,6 +384,14 @@ public class ProceduralGenerationManager : MonoBehaviour
                 tiles.Add(Instantiate(basicRooms[Random.Range(0, basicRooms.Count)], room.GetPos(), Quaternion.identity));
                 break;
         }
+
+        Vector3[] roomCorners = room.GetRoomCorners();
+
+        for (int i = 0; i < roomCorners.Length; i++)
+        {
+            cornerPos.Add(roomCorners[i]);
+        }
+        
 
         room.SetRoomTiles(tiles);
         //roomsPlaced.Add(room);

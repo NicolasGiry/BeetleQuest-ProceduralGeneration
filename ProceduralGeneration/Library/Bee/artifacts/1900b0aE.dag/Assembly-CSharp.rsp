@@ -407,6 +407,7 @@
 "Assets/Scripts/ProceduralGenerationManager.cs"
 "Assets/Scripts/Room.cs"
 "Assets/Scripts/Utils.cs"
+"Assets/StickToTerrain.cs"
 -langversion:9.0
 /deterministic
 /optimize+
