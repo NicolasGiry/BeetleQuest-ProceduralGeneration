@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 [ExecuteInEditMode]
@@ -6,6 +8,8 @@ public class StickToTerrain : MonoBehaviour
     public MeshFilter terrain;
     public float roomRadius;
     public float flatThreshold;
+    public List<Vector3> flatPoints = new();
+    public List<Vector3> noFlatPoints = new();
 
     private void Update()
     {
@@ -13,13 +17,21 @@ public class StickToTerrain : MonoBehaviour
         {
             Vector3 snappedPos = FindClosestVertex(transform.position);
             transform.position = snappedPos;
-            if (IsZoneFlat(snappedPos))
-            {
-                print("FLAT");
-            } else
-            {
-                print("not FLAT");
-            }
+            IsZoneFlat(snappedPos);
+        }
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        foreach( Vector3 pos in flatPoints )
+        {
+            Gizmos.DrawSphere(pos, 1f);
+        }
+        Gizmos.color = Color.red;
+        foreach (Vector3 pos in noFlatPoints)
+        {
+            Gizmos.DrawSphere(pos, 1f);
         }
     }
 
@@ -35,8 +47,6 @@ public class StickToTerrain : MonoBehaviour
         foreach (Vector3 v in vertices)
         {
             Vector3 worldV = terrainTransform.TransformPoint(v);
-
-            // Calcul uniquement sur XZ
             float distXZ = Vector2.Distance(
                 new Vector2(worldV.x, worldV.z),
                 new Vector2(targetPos.x, targetPos.z)
@@ -48,7 +58,6 @@ public class StickToTerrain : MonoBehaviour
                 closestVertex = worldV;
             }
         }
-
         return closestVertex;
     }
 
@@ -58,23 +67,25 @@ public class StickToTerrain : MonoBehaviour
         Vector3[] vertices = terrainMesh.vertices;
         Transform terrainTransform = terrain.transform;
         bool isFlat = true;
+        flatPoints.Clear();
+        noFlatPoints.Clear();
 
         foreach (Vector3 v in vertices)
         {
-            Vector3 worldV = terrainTransform.TransformPoint(v); // CORRECTION
+            Vector3 worldV = terrainTransform.TransformPoint(v); 
 
-            // Calcul en 2D (XZ)
             if (Vector2.Distance(new Vector2(pos.x, pos.z), new Vector2(worldV.x, worldV.z)) < roomRadius)
             {
                 
                 if (Mathf.Abs(pos.y - worldV.y) > flatThreshold)
                 {
                     isFlat = false;
-                    Debug.DrawLine(pos, worldV, Color.red, 0.1f);
+                    noFlatPoints.Add(worldV);
                 }
                 else
-                    Debug.DrawLine(pos, worldV, Color.green, 0.1f);
-
+                {
+                    flatPoints.Add(worldV);
+                }
             }
         }
         return isFlat;
