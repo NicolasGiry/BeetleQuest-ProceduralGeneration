@@ -1,11 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
-using UnityEngine.XR;
-using static UnityEngine.GraphicsBuffer;
+using TMPro;
+using UnityEngine.UI;
+using Unity.VisualScripting;
 
 public class ProceduralGenerationManager : MonoBehaviour
 {
@@ -35,6 +34,8 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] List<Vector3> endPosCorridors = new();
     [SerializeField] List<Vector3> startPosCorridorsNull = new();
     [SerializeField] List<Vector3> endPosCorridorsNull = new();
+    [SerializeField] float corridorWidth = 1.5f;
+    [SerializeField] List<Vector3> pathVertices = new();
 
     [Header("Debug")]
     [SerializeField] new Camera camera;
@@ -62,12 +63,29 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     [Header("Terrain")]
     [SerializeField] MeshFilter terrain;
+    [SerializeField] MapGenerator mapGenerator;
     [SerializeField] float roomRadius;
     [SerializeField] float flatThreshold;
     [SerializeField] float minDistanceBetween2Rooms;
     [SerializeField] List<Vector3> possibleRoomsPlacement = new();
     [SerializeField] Vector3 anchorPos;
     [SerializeField] int terrainSize;
+    float[,] noiseMap;
+
+    [Header("UI")]
+    [SerializeField] Slider flatThresholdSlider;
+    [SerializeField] Slider roomRadiusSlider;
+    [SerializeField] Slider distanceSlider;
+    [SerializeField] Toggle randomSeedToggle;
+    [SerializeField] TMP_InputField seedTextArea;
+
+
+    [SerializeField] TMP_Text flatThresholdText;
+    [SerializeField] TMP_Text roomRadiusText;
+    [SerializeField] TMP_Text distanceText;
+    [SerializeField] TMP_Text ErrorText;
+
+    [SerializeField] Animator waitingScreenAnimator;
 
     List<Vector3> cornerPos = new();
     List<Vector3> roomCheckPos = new();
@@ -81,13 +99,72 @@ public class ProceduralGenerationManager : MonoBehaviour
     [System.Obsolete]
     void Start()
     {
-        debut = Time.realtimeSinceStartup;
-        if (randomSeed)
-        {
-            seed = Random.Range(0, int.MaxValue);
-        }
-        Random.seed = seed;
+        flatThresholdSlider.value = flatThreshold;
+        roomRadiusSlider.value = roomRadius;
+        distanceSlider.value = minDistanceBetween2Rooms;
+        randomSeedToggle.isOn = randomSeed;
+        seedTextArea.text = "" + seed;
+        seedTextArea.interactable = !randomSeed;
+
+        flatThresholdText.text = "" + flatThreshold;
+        roomRadiusText.text = "" + roomRadius;
+        distanceText.text = "" + minDistanceBetween2Rooms;
+
+        flatThresholdSlider.onValueChanged.AddListener((value) => OnSliderChanged("flatThreshold", value));
+        roomRadiusSlider.onValueChanged.AddListener((value) => OnSliderChanged("roomRadius", value));
+        distanceSlider.onValueChanged.AddListener((value) => OnSliderChanged("minDistanceBetween2Rooms", value));
+        randomSeedToggle.onValueChanged.AddListener((value) => OnToggleChanged("randomSeed", value));
+        seedTextArea.onValueChanged.AddListener((value) => OnTextChanged("seed", value));
+
+
         StartGeneration();
+    }
+
+    void OnTextChanged(string textName, string value)
+    {
+        switch (textName)
+        {
+            case "seed":
+                seed = int.Parse(value);
+                break;
+        }
+    } 
+
+    void OnToggleChanged(string toggleName, bool value)
+    {
+        switch (toggleName)
+        {
+            case "randomSeed":
+                randomSeed = value;
+                seedTextArea.interactable = !value;
+                break;
+        }
+    }
+
+    void OnSliderChanged(string sliderName, float value)
+    {
+        switch (sliderName)
+        {
+            case "flatThreshold":
+                flatThreshold = value;
+                flatThresholdText.text = "" + value.ToString("0.##");
+                break;
+            case "roomRadius":
+                roomRadius = value;
+                roomRadiusText.text = "" + value.ToString("0.##");
+                distanceSlider.minValue = value;
+                terrainSize = 241 - (int) value;
+                break;
+            case "minDistanceBetween2Rooms":
+                minDistanceBetween2Rooms = value;
+                distanceText.text = "" + value.ToString("0.##");
+                break;
+        }
+    }
+
+    public void Quit()
+    {
+        Application.Quit();
     }
 
     [System.Obsolete]
@@ -100,7 +177,7 @@ public class ProceduralGenerationManager : MonoBehaviour
             }
             Random.seed = seed;
             debut = Time.realtimeSinceStartup;
-            DestroyPrecedent();
+            //DestroyPrecedent();
             StartGeneration();
         }
     }
@@ -129,22 +206,65 @@ public class ProceduralGenerationManager : MonoBehaviour
                 Gizmos.DrawLine(startPosCorridorsNull[i], endPosCorridorsNull[i]);
             }
         }
+
+        Gizmos.color = Color.blue;
+        foreach (Vector3 vertex in pathVertices)
+        {
+            Gizmos.DrawSphere(vertex, 2f);
+        }
+    }
+
+    public void LaunchGeneration()
+    {
+        StartCoroutine(LaunchGenerationCoroutine());
+    }
+
+    IEnumerator LaunchGenerationCoroutine()
+    {
+        waitingScreenAnimator.SetBool("Loading", true);
+        yield return new WaitForSeconds(0.2f);
+        StartGeneration();
+        yield return new WaitForSeconds(0.1f);
+        waitingScreenAnimator.SetBool("Loading", false);
     }
 
     void StartGeneration()
     {
+        debut = Time.realtimeSinceStartup;
+        if (randomSeed)
+        {
+            seed = Random.Range(0, int.MaxValue);
+        }
+        Random.seed = seed;
+        seedTextArea.text = ""+seed;
+        mapGenerator.seed = seed;
+        DestroyPrecedent();
+        mapGenerator.GenerateMap();
         FindPossibleRoomsPlacement();
         PlaceRooms();
+        if (rooms.Count == 0)
+        {
+            ErrorText.text = "The parameters provided did not allow any rooms to be placed.";
+        } else
+        {
+            ErrorText.text = "";
+        }
+        ConnectRooms();
         print("duration: " + (Time.realtimeSinceStartup - debut));
+        
     }
 
-    void DestroyPrecedent() {
+    public void DestroyPrecedent() {
         foreach(GameObject path in pathInstances) {
             Destroy(path);
         }
         foreach (Room room in roomsPlaced)
         {
             room.OnDestroyRoom();
+        }
+        foreach (GameObject room in rooms) 
+        {
+            Destroy(room);
         }
         roomsPlaced.Clear();
         pathInstances.Clear();
@@ -154,6 +274,10 @@ public class ProceduralGenerationManager : MonoBehaviour
         endPosCorridorsNull.Clear();
         cornerPos.Clear();
         roomCheckPos.Clear();
+        possibleRoomsPlacement.Clear();
+        if (roomsPrefab != null)
+            roomsPrefab.Clear();
+        rooms.Clear();
     }
 
     // **************************** Pseudo Room Placement Generation **************************************
@@ -170,7 +294,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         {
             for (int j = 0; j < terrainSize / roomRadius; j++)
             {
-                if (IsZoneFlat(currentPos) && FarEnough(currentPos))
+                if (FarEnough(currentPos) && IsZoneFlat(currentPos))
                 {
                     possibleRoomsPlacement.Add(currentPos);
                     roomCheckPos.Add(currentPos);
@@ -185,12 +309,19 @@ public class ProceduralGenerationManager : MonoBehaviour
     void PlaceRooms()
     {
         roomsPrefab = new List<List<GameObject>> { startRooms, arenas, firecamps, chests, narrativePlace, shop, temple };
-        for (int i = 0; i < numbersOfRoomsType.Count(); i++)
+        //for (int i = 0; i < numbersOfRoomsType.Count(); i++)
+        //{
+        //    for (int j = 0; j < Mathf.Min(numbersOfRoomsType[i], roomCheckPos.Count); j++)
+        //    {
+        //        GenerateRoom(i);
+        //    }
+        //}
+
+        foreach(Vector3 roomPos in roomCheckPos)
         {
-            for (int j = 0; j < numbersOfRoomsType[i]; j++)
-            {
-                GenerateRoom(i);
-            }
+            GameObject room = Instantiate(roomsPrefab[0][0], FindClosestVertex(roomPos), Quaternion.identity);
+            room.transform.localScale = new Vector3(roomRadius, roomRadius, roomRadius);
+            rooms.Add(room);
         }
     }
 
@@ -199,9 +330,12 @@ public class ProceduralGenerationManager : MonoBehaviour
         GameObject room;
         int version = Random.Range(0, roomsPrefab[type].Count());
         Transform roomTransform = roomsPrefab[type][version].GetComponent<Transform>();
-        room = Instantiate(roomsPrefab[type][version], roomCheckPos[rooms.Count()], Quaternion.identity);
+        GameObject roomPref = roomsPrefab[type][version];
+        Vector3 roomPos = roomCheckPos[rooms.Count()];
+        room = Instantiate(roomPref, roomPos, Quaternion.identity);
         rooms.Add(room);
         room.transform.position = FindClosestVertex(room.transform.position);
+        room.transform.localScale = new Vector3(roomRadius * 2, roomRadius * 2, roomRadius * 2);
         foreach (Transform t in roomTransform)
         {
             t.position = new Vector3(t.position.x, 0, t.position.z);
@@ -271,162 +405,12 @@ public class ProceduralGenerationManager : MonoBehaviour
         return closestVertex;
     }
 
-    //IEnumerator PlaceRoomsRoutine() {
+    void ConnectRooms()
+    {
+       foreach (GameObject room in rooms)
+        {
 
-    //    // générer la première salle tjrs à la même position
-    //    Mesh mesh = terrain.mesh;
-    //    Vector3[] vertices = mesh.vertices;
-    //    Vector3 closestVertex = FindClosestVertex(startRoomPos);
+        }
+    }
 
-    //    startRoom = new Room(0, closestVertex, new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ)));
-    //    startRoom.SetRoomType(RoomType.Start);
-    //    roomsPlaced.Add(startRoom);
-    //    Room currentRoom = startRoom;
-
-    //    for (int i=1; i<nbRooms; i++) {
-    //        Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), heightRoomOffset, Random.Range(minPosZ, maxPosZ));
-    //        Vector2 size = new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ));
-    //        Room room = new Room(roomsPlaced.Count, FindClosestVertex(roomPos), size);
-    //        if  (CanBePlaced(room))
-    //        {
-    //            //PlaceRoomInstance(room);
-    //            roomsPlaced.Add(room);
-    //            if (visualize)
-    //            {
-    //                yield return null;
-    //            }
-    //            ConnectRooms(currentRoom, room);
-    //            currentRoom = room;
-    //        }
-    //    }
-    //    bossRoom = currentRoom;
-    //    bossRoom.SetRoomType(RoomType.Boss);
-    //    for (int i=0; i<nbLock; i++)
-    //    {
-    //        StartCoroutine(AddLockedRoomAndKey());
-    //    }
-    //    foreach (Room room in roomsPlaced)
-    //    {
-    //        PlaceRoomInstance(room);
-    //    }
-    //}
-
-
-
-    //IEnumerator AddLockedRoomAndKey()
-    //{
-    //    Room lockedRoom;
-    //    List<Room> candidates = roomsPlaced.Where(r => r.GetRoomType() == RoomType.Principal).ToList();
-
-    //    if (candidates.Count > 0)
-    //    {
-    //        lockedRoom = candidates[Random.Range(1, candidates.Count)];
-    //        lockedRoom.SetRoomType(RoomType.Lock);
-    //        Room currentRoom = roomsPlaced[Random.Range(1, lockedRoom.GetId() - 2)];
-
-    //        int pathLenght = Random.Range(minSecondaryPathLenght, maxSecondaryPathLenght);
-    //        int iteration = 0;
-    //        for (int i = 0; i < pathLenght && iteration < pathLenght * 100; i++, iteration++)
-    //        {
-    //            Vector3 roomPos = currentRoom.GetPos() + new Vector3(Random.Range(minPosX, maxPosX), heightRoomOffset, Random.Range(minPosZ, maxPosZ));
-    //            Vector2 size = new Vector2(Random.Range(minSizeX, maxSizeX), Random.Range(minSizeZ, maxSizeZ));
-    //            Room room = new Room(roomsPlaced.Count, FindClosestVertex(roomPos), size);
-    //            room.SetRoomType(RoomType.Secondary);
-    //            if (CanBePlaced(room))
-    //            {
-    //                roomsPlaced.Add(room);
-    //                if (visualize)
-    //                {
-    //                    yield return null;
-    //                }
-    //                ConnectRooms(currentRoom, room);
-    //                currentRoom = room;
-    //            }
-    //            else
-    //            {
-    //                i--;
-    //            }
-    //        }
-    //        currentRoom.SetRoomType(RoomType.Key);
-    //    }
-    //    else
-    //    { 
-    //        Debug.LogWarning("Aucune salle valide trouvée pour lockedRoom !");
-    //    }
-    //    ColorRooms();
-    //}
-
-    //bool CanBePlaced(Room room)
-    //{
-    //    foreach (Room other in roomsPlaced)
-    //    {
-    //        if (other != room && room.Overlaps(other, margin))
-    //        {
-    //            return false;
-    //        }
-    //    }
-    //    return true;
-    //}
-
-    //void PlaceRoomInstance(Room room)
-    //{
-    //    List<GameObject> tiles = new();
-    //    switch (room.GetRoomType())
-    //    {
-    //        case RoomType.Start:
-    //            tiles.Add(Instantiate(startRooms[Random.Range(0, startRooms.Count)], room.GetPos(), Quaternion.identity)); 
-    //            break;
-    //        case RoomType.Boss:
-    //            tiles.Add(Instantiate(bossRooms[Random.Range(0, bossRooms.Count)], room.GetPos(), Quaternion.identity));
-    //            break;
-    //        case RoomType.Key:
-    //            tiles.Add(Instantiate(keyRooms[Random.Range(0, keyRooms.Count)], room.GetPos(), Quaternion.identity));
-    //            break;
-    //        case RoomType.Lock:
-    //            tiles.Add(Instantiate(lockedRooms[Random.Range(0, lockedRooms.Count)], room.GetPos(), Quaternion.identity));
-    //            break;
-    //        case RoomType.Principal: case RoomType.Secondary:
-    //            tiles.Add(Instantiate(basicRooms[Random.Range(0, basicRooms.Count)], room.GetPos(), Quaternion.identity));
-    //            break;
-    //    }
-
-    //    Vector3[] roomCorners = room.GetRoomCorners();
-
-    //    for (int i = 0; i < roomCorners.Length; i++)
-    //    {
-    //        cornerPos.Add(roomCorners[i]);
-    //    }
-
-
-    //    room.SetRoomTiles(tiles);
-    //    //roomsPlaced.Add(room);
-
-    //    //List<GameObject> tiles = new();
-    //    //for (int x = (int)room.GetPos().x; x < room.GetPos().x + room.GetSize().x; x++)
-    //    //{
-    //    //    for (int z = (int)room.GetPos().z; z < room.GetPos().z + room.GetSize().y; z++)
-    //    //    {
-    //    //        tiles.Add(Instantiate(pathTile, new Vector3(x, 0, z), Quaternion.identity));
-    //    //    }
-    //    //}
-    //    //room.SetRoomTiles(tiles);
-    //    //roomsPlaced.Add(room);
-    //}
-
-    //private void ConnectRooms(Room a, Room b)
-    //{
-    //    if (a.GetConnexions().Contains(b)) return;
-    //    a.AddConnexion(b);
-    //    b.AddConnexion(a);
-    //    startPosCorridors.Add(a.GetEndPos());
-    //    endPosCorridors.Add(b.GetStartPos());
-    //}
-
-    //void ColorRooms()
-    //{
-    //    foreach (Room room in roomsPlaced)
-    //    {
-    //        room.ColorRoom(materials);
-    //    }
-    //}
 }
