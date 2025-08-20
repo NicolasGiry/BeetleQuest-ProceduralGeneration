@@ -37,6 +37,10 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] float corridorWidth = 1.5f;
     [SerializeField] List<Vector3> pathVertices = new();
 
+    [SerializeField] float maxDistanceConnexion;
+    [SerializeField] List<Path> paths = new();
+
+
     [Header("Debug")]
     [SerializeField] new Camera camera;
     [SerializeField] List<GameObject> pathInstances = new();
@@ -212,6 +216,10 @@ public class ProceduralGenerationManager : MonoBehaviour
         {
             Gizmos.DrawSphere(vertex, 2f);
         }
+
+        foreach(Path path in paths) {
+            Gizmos.DrawLine(path.GetPosA(), path.GetPosB());
+        }
     }
 
     public void LaunchGeneration()
@@ -284,7 +292,7 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     void FindPossibleRoomsPlacement()
     {
-        // pour que pos soit gardée : 
+        // pour que pos soit gardï¿½e : 
         //      - pos + rayonMin est plat (+- flatThreshold)
         //      - pos suffisament loin de toute autre salle 
 
@@ -322,6 +330,9 @@ public class ProceduralGenerationManager : MonoBehaviour
             GameObject room = Instantiate(roomsPrefab[0][0], FindClosestVertex(roomPos), Quaternion.identity);
             room.transform.localScale = new Vector3(roomRadius, roomRadius, roomRadius);
             rooms.Add(room);
+
+            Room roomInfo = new Room(rooms.Count-1, room.transform.position, roomRadius);
+            roomsPlaced.Add(roomInfo);
         }
     }
 
@@ -340,6 +351,9 @@ public class ProceduralGenerationManager : MonoBehaviour
         {
             t.position = new Vector3(t.position.x, 0, t.position.z);
         }
+
+        Room roomInfo = new Room(rooms.Count-1, room.transform.position, roomRadius);
+        roomsPlaced.Add(roomInfo);
     }
 
     int GetNbRooms()
@@ -407,9 +421,18 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     void ConnectRooms()
     {
-       foreach (GameObject room in rooms)
+        print(roomsPlaced.Count);
+       foreach (Room roomA in roomsPlaced)
         {
-
+            foreach (Room roomB in roomsPlaced)
+            {
+                if (!roomA.Equals(roomB) && Vector3.Distance(roomA.GetPos(), roomB.GetPos()) < maxDistanceConnexion) 
+                {
+                    Path path = new Path(roomA, roomB);
+                    paths.Add(path);
+                    print("Path : " + roomA.GetPos() + " - " + roomB.GetPos());
+                }
+            }
         }
     }
 

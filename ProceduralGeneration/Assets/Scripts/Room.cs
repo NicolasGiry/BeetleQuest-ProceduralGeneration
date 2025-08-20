@@ -15,7 +15,7 @@ public class Room
 {
     int id;
     Vector3 pos;
-    Vector2 size;
+    float size;
     RoomType type;
     List<Room> connexions = new();
     List<GameObject> tiles = new();
@@ -24,16 +24,16 @@ public class Room
     public Vector3 startOffset = new Vector3(-11, 0, -10);
     public Vector3 endOffset = new Vector3(-11, 0, 3);
 
-    public Room(int id, Vector3 pos, Vector2 size, RoomType type = RoomType.Principal)
+    public Room(int id, Vector3 pos, float size, RoomType type = RoomType.Principal)
     {
         this.id = id;
         this.pos = pos;
         this.size = size;
         this.type = type;
-        roomCorners[0] = new Vector3(pos.x - (size.x / 2f), pos.y, pos.z - (size.y / 2f));
-        roomCorners[1] = new Vector3(pos.x - (size.x / 2f), pos.y, pos.z + (size.y / 2f));
-        roomCorners[2] = new Vector3(pos.x + (size.x / 2f), pos.y, pos.z - (size.y / 2f));
-        roomCorners[3] = new Vector3(pos.x + (size.x / 2f), pos.y, pos.z + (size.y / 2f));
+        // roomCorners[0] = new Vector3(pos.x - (size.x / 2f), pos.y, pos.z - (size.y / 2f));
+        // roomCorners[1] = new Vector3(pos.x - (size.x / 2f), pos.y, pos.z + (size.y / 2f));
+        // roomCorners[2] = new Vector3(pos.x + (size.x / 2f), pos.y, pos.z - (size.y / 2f));
+        // roomCorners[3] = new Vector3(pos.x + (size.x / 2f), pos.y, pos.z + (size.y / 2f));
     }
 
     public int GetId()
@@ -44,15 +44,15 @@ public class Room
     {
         return pos;
     }
-    public Vector3 GetStartPos()
-    {
-        return GetCenter() + startOffset;
-    }
-    public Vector3 GetEndPos()
-    {
-        return GetCenter() + endOffset;
-    }
-    public Vector2 GetSize()
+    // public Vector3 GetStartPos()
+    // {
+    //     return GetCenter() + startOffset;
+    // }
+    // public Vector3 GetEndPos()
+    // {
+    //     return GetCenter() + endOffset;
+    // }
+    public float GetSize()
     {
         return size;
     }
@@ -64,10 +64,10 @@ public class Room
     {
         return connexions;
     }
-    public Vector3 GetCenter()
-    {
-        return new Vector3(pos.x + size.x/2, 0, pos.z + size.y/2);
-    }
+    // public Vector3 GetCenter()
+    // {
+    //     return new Vector3(pos.x + size.x/2, 0, pos.z + size.y/2);
+    // }
     public bool GetFree()
     {
         return free;
@@ -96,13 +96,13 @@ public class Room
         }
     }
 
-    public bool Overlaps(Room other, float margin)
-    {
-        return !(pos.x + size.x + margin <= other.pos.x ||
-                 pos.x - margin >= other.pos.x + other.size.x ||
-                 pos.z + size.y + margin <= other.pos.z ||
-                 pos.z - margin >= other.pos.z + other.size.y);
-    }
+    // public bool Overlaps(Room other, float margin)
+    // {
+    //     return !(pos.x + size.x + margin <= other.pos.x ||
+    //              pos.x - margin >= other.pos.x + other.size.x ||
+    //              pos.z + size.y + margin <= other.pos.z ||
+    //              pos.z - margin >= other.pos.z + other.size.y);
+    // }
 
     public void ColorRoom(List<Material> materials)
     {
