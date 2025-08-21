@@ -35,7 +35,7 @@ public class StickToTerrain : MonoBehaviour
         }
     }
 
-    Vector3 FindClosestVertex(Vector3 targetPos)
+    public Vector3 FindClosestVertex(Vector3 targetPos)
     {
         Mesh mesh = terrain.sharedMesh;
         Vector3[] vertices = mesh.vertices;
@@ -61,7 +61,7 @@ public class StickToTerrain : MonoBehaviour
         return closestVertex;
     }
 
-    bool IsZoneFlat(Vector3 pos)
+    public bool IsZoneFlat(Vector3 pos)
     {
         Mesh terrainMesh = terrain.sharedMesh;
         Vector3[] vertices = terrainMesh.vertices;

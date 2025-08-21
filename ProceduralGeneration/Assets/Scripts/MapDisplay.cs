@@ -3,6 +3,7 @@ using UnityEngine;
 public class MapDisplay : MonoBehaviour
 {
     [SerializeField] Material textureRenderer;
+    //[SerializeField] Renderer textureRenderer;
     [SerializeField] MeshFilter meshFilter;
     [SerializeField] MeshRenderer meshRenderer;
 
@@ -27,9 +28,14 @@ public class MapDisplay : MonoBehaviour
         texture.Apply();
 
         textureRenderer.mainTexture = texture;
+    }
 
-        //textureRenderer.sharedMaterial.mainTexture = texture;
-        //textureRenderer.transform.localScale = new Vector3(width, 1, height);
+    public void DrawColorMap(Color[] colorMap, int width, int height) {
+        Texture2D texture = new Texture2D(width, height);
+        texture.SetPixels(colorMap);
+        texture.Apply();
+
+        textureRenderer.mainTexture = texture;
     }
 
     public void DrawMesh(MeshData meshData)

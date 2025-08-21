@@ -286,6 +286,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         if (roomsPrefab != null)
             roomsPrefab.Clear();
         rooms.Clear();
+        paths.Clear();
     }
 
     // **************************** Pseudo Room Placement Generation **************************************

@@ -119,7 +119,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 99
+  controlID: 100
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -145,7 +145,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 100}
   m_MaxSize: {x: 16192, y: 16192}
   vertical: 1
-  controlID: 42
+  controlID: 21
   draggingID: 0
 --- !u!114 &7
 MonoBehaviour:
@@ -171,7 +171,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 50}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 43
+  controlID: 22
   draggingID: 0
 --- !u!114 &8
 MonoBehaviour:
@@ -320,7 +320,7 @@ MonoBehaviour:
     m_OverlaysVisible: 1
   m_LockTracker:
     m_IsLocked: 0
-  m_LastSelectedObjectID: 31312
+  m_LastSelectedObjectID: 31300
 --- !u!114 &13
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -872,9 +872,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: -14.503354, y: -95.27629, z: -137.82529}
+    m_Target: {x: 255.85417, y: -297.9189, z: -270.3108}
     speed: 2
-    m_Value: {x: -14.503354, y: -95.27629, z: -137.82529}
+    m_Value: {x: 255.85417, y: -297.9189, z: -270.3108}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -920,13 +920,13 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: -0.018036492, y: -0.9421037, z: 0.3308784, w: -0.05135311}
+    m_Target: {x: -0.10970691, y: -0.88907754, z: 0.28862992, w: -0.33794186}
     speed: 2
-    m_Value: {x: -0.014854941, y: -0.9440169, z: 0.32675654, w: -0.042914838}
+    m_Value: {x: -0.10876846, y: -0.8900128, z: 0.28745854, w: -0.33677033}
   m_Size:
-    m_Target: 238.39438
+    m_Target: 342.57678
     speed: 2
-    m_Value: 238.39438
+    m_Value: 342.57678
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -1102,8 +1102,8 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: 727a0000
-      m_LastClickedID: 31346
+      m_SelectedIDs: 447a0000
+      m_LastClickedID: 31300
       m_ExpandedIDs: 2afbffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
@@ -1248,7 +1248,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Materials
+    - Assets/Editor
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1258,16 +1258,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Materials
+  - Assets/Editor
   m_LastFoldersGridSize: -1
   m_LastProjectPath: /home/nicolas/Documents/Cours/CA/BeetleQuest-ProceduralGeneration/ProceduralGeneration
   m_LockTracker:
     m_IsLocked: 1
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 12}
+    scrollPos: {x: 0, y: 96}
     m_SelectedIDs: 607d0000
     m_LastClickedID: 32096
-    m_ExpandedIDs: 00000000ec7c0000ee7c0000f07c0000f27c0000f47c000000ca9a3b
+    m_ExpandedIDs: 00000000f07c0000f27c0000f47c0000f67c0000f87c000000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1296,7 +1296,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 00000000ec7c0000ee7c0000f07c0000f27c0000f47c0000
+    m_ExpandedIDs: 00000000f07c0000f27c0000f47c0000f67c0000f87c0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 

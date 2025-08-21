@@ -7,8 +7,11 @@ public class MapGenerator : MonoBehaviour
     public enum DrawMode
     {
         NoiseMap,
-        Mesh
+        Mesh,
+        ColorMap
     };
+
+    [SerializeField] DrawMode drawMode;
 
     [SerializeField] ProceduralGenerationManager generationManager;
     const int mapChunkSize = 241;
@@ -23,6 +26,9 @@ public class MapGenerator : MonoBehaviour
     [SerializeField][Range(1f,100f)] float heightMultiplier;
     [SerializeField] AnimationCurve heightCurve;
     public float[,] noiseMap;
+
+    [SerializeField] TerrainType[] regions;
+    [SerializeField] StickToTerrain flatDetector;
 
 
     [SerializeField] Slider lodSlider;
@@ -102,9 +108,47 @@ public class MapGenerator : MonoBehaviour
         generationManager.DestroyPrecedent();
         noiseMap = Noise.GenerateNoiseMap(mapChunkSize, mapChunkSize, seed, noiseScale, octaves, persistance, lacunarity, offset);
 
+        Color[] colorMap = new Color[mapChunkSize*mapChunkSize];
+
+        for (int y = 0; y < mapChunkSize; y++)
+        {
+            for (int x = 0; x < mapChunkSize; x++)
+            {
+                float currentHeight = noiseMap[x, y];
+                for (int i = 0; i < regions.Length; i++)
+                {
+                    if (currentHeight <= regions[i].height) {
+                        colorMap[y*mapChunkSize + x] = regions[i].color;
+                        break;
+                    }
+                }
+
+                // TROP LOOONG
+                // if (flatDetector.IsZoneFlat(flatDetector.FindClosestVertex(new Vector3(x, 5f, y)))) {
+                //     colorMap[y*mapChunkSize + x] = regions[0].color;
+                // } else {
+                //     colorMap[y*mapChunkSize + x] = regions[1].color;
+                // }
+            }
+        }
+
         MapDisplay mapDisplay = FindAnyObjectByType<MapDisplay>();
 
-        mapDisplay.DrawNoiseMap(noiseMap);
+        if (drawMode == DrawMode.NoiseMap) {
+            mapDisplay.DrawNoiseMap(noiseMap);
+        } else if (drawMode == DrawMode.ColorMap) {
+            mapDisplay.DrawColorMap(colorMap, mapChunkSize, mapChunkSize);
+        }
+
+        
         mapDisplay.DrawMesh(MeshGenerator.GenerateTerrainMesh(noiseMap, heightMultiplier, heightCurve, lod));        
     }
+}
+
+
+[System.Serializable]
+public struct TerrainType {
+    public string name;
+    public float height;
+    public Color color;
 }
