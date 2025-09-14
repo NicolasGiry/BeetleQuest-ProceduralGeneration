@@ -1,39 +1,49 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Net.NetworkInformation;
-using Unity.VisualScripting;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
-
-// TODO: - Calculer les positions interdites quand on monte et descend sans impacter la currentTileLocation
-//       - Backtracking si on se retouve bloquer 
-
-enum Direction
-{
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-    FORWARD,
-    BACKWARD
-};
+using TMPro;
+using UnityEngine.UI;
+using Unity.VisualScripting;
 
 public class ProceduralGenerationManager : MonoBehaviour
 {
-    [Header("Generation parameters")]
-    [SerializeField] int pathLength;
-    [SerializeField] int minUpInARow;
-    [SerializeField] int maxUpInARow;
-    [SerializeField] int minPlatformSize;
-    [SerializeField] int minBeforeFirstSlope;
-    [SerializeField] float upProba;
-    [SerializeField] float downProba;
-    [SerializeField] float platformProba;
+    [Header("General Parameters:")]
+    [SerializeField]
+    int seed;
+    [SerializeField] bool randomSeed;
+    [SerializeField] bool visualize;
+
+    [Header("Pseudo Room Placement Parameters")]
+    [SerializeField] Vector3 startRoomPos;
+    [SerializeField] int minPosX;
+    [SerializeField] int maxPosX;
+    [SerializeField] int minPosZ;
+    [SerializeField] int maxPosZ;
+    [SerializeField] int minSizeX;
+    [SerializeField] int maxSizeX;
+    [SerializeField] int minSizeZ;
+    [SerializeField] int maxSizeZ;
+    [SerializeField] float heightRoomOffset;
+    [SerializeField] int minSecondaryPathLenght;
+    [SerializeField] int maxSecondaryPathLenght;
+    [SerializeField] int margin;
+    [SerializeField] int nbLock;
+    [SerializeField] List<Room> roomsPlaced = new();
+    [SerializeField] List<Vector3> startPosCorridors = new();
+    [SerializeField] List<Vector3> endPosCorridors = new();
+    [SerializeField] List<Vector3> startPosCorridorsNull = new();
+    [SerializeField] List<Vector3> endPosCorridorsNull = new();
+    [SerializeField] float corridorWidth = 1.5f;
+    [SerializeField] List<Vector3> pathVertices = new();
+
+    [SerializeField] float maxDistanceConnexion;
+    [SerializeField] List<Path> paths = new();
+
 
     [Header("Debug")]
+    [SerializeField] new Camera camera;
     [SerializeField] List<GameObject> pathInstances = new();
-    [SerializeField] Vector3 currentTileLocation;
-    [SerializeField] List<Vector2> prohibitedPositions;
 
     [Header("Tiles Prefabs")]
     [SerializeField] GameObject pathTile;
@@ -43,356 +53,388 @@ public class ProceduralGenerationManager : MonoBehaviour
     [SerializeField] GameObject cliffTile;
     [SerializeField] GameObject ladderTile;
 
-    [Header("Directions")]
-    [SerializeField] Vector3[] directionsTab;
-    [SerializeField] Dictionary<Direction, Vector3> directions = new();
+    [Header("Rooms Prefabs")]
+    [SerializeField] List<GameObject> startRooms;
+    [SerializeField] List<GameObject> arenas;
+    [SerializeField] List<GameObject> firecamps;
+    [SerializeField] List<GameObject> chests;
+    [SerializeField] List<GameObject> narrativePlace;
+    [SerializeField] List<GameObject> shop;
+    [SerializeField] List<GameObject> temple;
+    [SerializeField] List<List<GameObject>> roomsPrefab;
+    [SerializeField] List<GameObject> rooms;
 
 
-    bool isGoingUp;
-    bool isGoingDown;
-    bool isPlatform;
-    int nbGenerated;
-    int totalNbUp;
-    int totalNbDown;
-    int currentNbUp;
-    int currentNbDown;
-    int currentNbPlatform;
-    List<Vector2> nextPossibleProhibitedPositions = new(); 
+    [Header("Terrain")]
+    [SerializeField] MeshFilter terrain;
+    [SerializeField] MapGenerator mapGenerator;
+    [SerializeField] float roomRadius;
+    [SerializeField] float flatThreshold;
+    [SerializeField] float minDistanceBetween2Rooms;
+    [SerializeField] List<Vector3> possibleRoomsPlacement = new();
+    [SerializeField] Vector3 anchorPos;
+    [SerializeField] int terrainSize;
+    float[,] noiseMap;
 
-    Direction nextDirection;
-    Direction lastDirection = Direction.FORWARD;
-    Direction slopeDirection;
+    [Header("UI")]
+    [SerializeField] Slider flatThresholdSlider;
+    [SerializeField] Slider roomRadiusSlider;
+    [SerializeField] Slider distanceSlider;
+    [SerializeField] Toggle randomSeedToggle;
+    [SerializeField] TMP_InputField seedTextArea;
 
 
+    [SerializeField] TMP_Text flatThresholdText;
+    [SerializeField] TMP_Text roomRadiusText;
+    [SerializeField] TMP_Text distanceText;
+    [SerializeField] TMP_Text ErrorText;
 
-    void Awake()
+    [SerializeField] Animator waitingScreenAnimator;
+
+    List<Vector3> cornerPos = new();
+    List<Vector3> roomCheckPos = new();
+
+    [SerializeField]
+    [Tooltip("[StartRooms, FireCamps, Chests, NarrativePlaces, Shops, Temples]")]
+    int[] numbersOfRoomsType = {1, 2, 3, 2, 1, 3};
+
+    float debut;
+
+    [System.Obsolete]
+    void Start()
     {
-        // directions dictionnary initialization
-        for (int i=0; i<directionsTab.Length; i++)
-        {
-            directions.Add((Direction) i, directionsTab[i]);
-        }
+        flatThresholdSlider.value = flatThreshold;
+        roomRadiusSlider.value = roomRadius;
+        distanceSlider.value = minDistanceBetween2Rooms;
+        randomSeedToggle.isOn = randomSeed;
+        seedTextArea.text = "" + seed;
+        seedTextArea.interactable = !randomSeed;
 
-        float debut = Time.realtimeSinceStartup;
+        flatThresholdText.text = "" + flatThreshold;
+        roomRadiusText.text = "" + roomRadius;
+        distanceText.text = "" + minDistanceBetween2Rooms;
+
+        flatThresholdSlider.onValueChanged.AddListener((value) => OnSliderChanged("flatThreshold", value));
+        roomRadiusSlider.onValueChanged.AddListener((value) => OnSliderChanged("roomRadius", value));
+        distanceSlider.onValueChanged.AddListener((value) => OnSliderChanged("minDistanceBetween2Rooms", value));
+        randomSeedToggle.onValueChanged.AddListener((value) => OnToggleChanged("randomSeed", value));
+        seedTextArea.onValueChanged.AddListener((value) => OnTextChanged("seed", value));
+
+
         StartGeneration();
-        print("Durée : " + (Time.realtimeSinceStartup - debut));
     }
 
-    
+    void OnTextChanged(string textName, string value)
+    {
+        switch (textName)
+        {
+            case "seed":
+                seed = int.Parse(value);
+                break;
+        }
+    } 
+
+    void OnToggleChanged(string toggleName, bool value)
+    {
+        switch (toggleName)
+        {
+            case "randomSeed":
+                randomSeed = value;
+                seedTextArea.interactable = !value;
+                break;
+        }
+    }
+
+    void OnSliderChanged(string sliderName, float value)
+    {
+        switch (sliderName)
+        {
+            case "flatThreshold":
+                flatThreshold = value;
+                flatThresholdText.text = "" + value.ToString("0.##");
+                break;
+            case "roomRadius":
+                roomRadius = value;
+                roomRadiusText.text = "" + value.ToString("0.##");
+                distanceSlider.minValue = value;
+                terrainSize = 241 - (int) value;
+                break;
+            case "minDistanceBetween2Rooms":
+                minDistanceBetween2Rooms = value;
+                distanceText.text = "" + value.ToString("0.##");
+                break;
+        }
+    }
+
+    public void Quit()
+    {
+        Application.Quit();
+    }
+
+    [System.Obsolete]
     void Update()
     {
-        
+        if (Input.GetKeyDown("space")) {
+            if (randomSeed)
+            {
+                seed = Random.Range(0, int.MaxValue);
+            }
+            Random.seed = seed;
+            debut = Time.realtimeSinceStartup;
+            //DestroyPrecedent();
+            StartGeneration();
+        }
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        for (int i=0; i<startPosCorridors.Count; i++) {
+            Gizmos.DrawLine(startPosCorridors[i], endPosCorridors[i]);
+        }
+
+        Gizmos.color = Color.red;
+        for (int i = 0; i < cornerPos.Count; i++)
+        {
+            Gizmos.DrawSphere(cornerPos[i] + new Vector3(0, heightRoomOffset, 0), 0.25f);
+        }
+
+        for (int i = 0; i < roomCheckPos.Count; i++)
+        {
+            Gizmos.DrawSphere(roomCheckPos[i], roomRadius / 2);
+        }
+
+        if (visualize) {
+            Gizmos.color = Color.red;
+            for (int i=0; i<startPosCorridorsNull.Count; i++) {
+                Gizmos.DrawLine(startPosCorridorsNull[i], endPosCorridorsNull[i]);
+            }
+        }
+
+        Gizmos.color = Color.blue;
+        foreach (Vector3 vertex in pathVertices)
+        {
+            Gizmos.DrawSphere(vertex, 2f);
+        }
+
+        foreach(Path path in paths) {
+            Gizmos.DrawLine(path.GetPosA(), path.GetPosB());
+        }
+    }
+
+    public void LaunchGeneration()
+    {
+        StartCoroutine(LaunchGenerationCoroutine());
+    }
+
+    IEnumerator LaunchGenerationCoroutine()
+    {
+        waitingScreenAnimator.SetBool("Loading", true);
+        yield return new WaitForSeconds(0.2f);
+        StartGeneration();
+        yield return new WaitForSeconds(0.1f);
+        waitingScreenAnimator.SetBool("Loading", false);
     }
 
     void StartGeneration()
     {
-
-        for (int i=0; i < pathLength; i++)
+        debut = Time.realtimeSinceStartup;
+        if (randomSeed)
         {
-            nextDirection = ChooseNextDirection();
-            print(nextDirection.ToString());
-            lastDirection = PlaceNextTile();
+            seed = Random.Range(0, int.MaxValue);
         }
-    }
-
-    // Choose NextDirection according to defined rules
-    Direction ChooseNextDirection()
-    {
-        List<Direction> possibleDirections = new List<Direction>();
-
-        if (isGoingUp)
+        Random.seed = seed;
+        seedTextArea.text = ""+seed;
+        mapGenerator.seed = seed;
+        DestroyPrecedent();
+        mapGenerator.GenerateMap();
+        FindPossibleRoomsPlacement();
+        PlaceRooms();
+        if (rooms.Count == 0)
         {
-            if (IsGoingUp())
-            {
-                return GoingUp();
-            } else
-            {
-                isGoingUp = false;
-                currentNbUp = 0;
-                isPlatform = true;
-                currentNbPlatform = 0;
-            }
-        } else if (isGoingDown)
-        {
-            if (IsGoingDown())
-            {
-                return GoingDown();
-            } else
-            {
-                isGoingDown = false;
-                currentNbDown = 0;
-                isPlatform = true;
-                currentNbPlatform = 0;
-            }
-        } else if (isPlatform)
-        {
-            currentNbPlatform++;
-            if (currentNbPlatform > minPlatformSize)
-            {
-                isPlatform = ContinuePlatform();
-            }
+            ErrorText.text = "The parameters provided did not allow any rooms to be placed.";
         } else
         {
-            if (IsGoingUp())
+            ErrorText.text = "";
+        }
+        ConnectRooms();
+        print("duration: " + (Time.realtimeSinceStartup - debut));
+        
+    }
+
+    public void DestroyPrecedent() {
+        foreach(GameObject path in pathInstances) {
+            Destroy(path);
+        }
+        foreach (Room room in roomsPlaced)
+        {
+            room.OnDestroyRoom();
+        }
+        foreach (GameObject room in rooms) 
+        {
+            Destroy(room);
+        }
+        roomsPlaced.Clear();
+        pathInstances.Clear();
+        startPosCorridors.Clear();
+        endPosCorridors.Clear();
+        startPosCorridorsNull.Clear();
+        endPosCorridorsNull.Clear();
+        cornerPos.Clear();
+        roomCheckPos.Clear();
+        possibleRoomsPlacement.Clear();
+        if (roomsPrefab != null)
+            roomsPrefab.Clear();
+        rooms.Clear();
+        paths.Clear();
+    }
+
+    // **************************** Pseudo Room Placement Generation **************************************
+
+    void FindPossibleRoomsPlacement()
+    {
+        // pour que pos soit gardï¿½e : 
+        //      - pos + rayonMin est plat (+- flatThreshold)
+        //      - pos suffisament loin de toute autre salle 
+
+        Vector3 currentPos = FindClosestVertex(anchorPos + new Vector3(roomRadius, 0, roomRadius));
+
+        for (int i = 0; i < terrainSize / roomRadius; i++)
+        {
+            for (int j = 0; j < terrainSize / roomRadius; j++)
             {
-                isGoingUp = true;
-                return GoingUp();
+                if (FarEnough(currentPos) && IsZoneFlat(currentPos))
+                {
+                    possibleRoomsPlacement.Add(currentPos);
+                    roomCheckPos.Add(currentPos);
+                }
+                currentPos = FindClosestVertex(currentPos + new Vector3(0, 0, roomRadius));
             }
+            currentPos = FindClosestVertex(currentPos + new Vector3(roomRadius, 0, 0));
+            currentPos.z = anchorPos.z + roomRadius;
+        }
+    }
 
-            if (IsGoingDown())
+    void PlaceRooms()
+    {
+        roomsPrefab = new List<List<GameObject>> { startRooms, arenas, firecamps, chests, narrativePlace, shop, temple };
+        //for (int i = 0; i < numbersOfRoomsType.Count(); i++)
+        //{
+        //    for (int j = 0; j < Mathf.Min(numbersOfRoomsType[i], roomCheckPos.Count); j++)
+        //    {
+        //        GenerateRoom(i);
+        //    }
+        //}
+
+        foreach(Vector3 roomPos in roomCheckPos)
+        {
+            GameObject room = Instantiate(roomsPrefab[0][0], FindClosestVertex(roomPos), Quaternion.identity);
+            room.transform.localScale = new Vector3(roomRadius, roomRadius, roomRadius);
+            rooms.Add(room);
+
+            Room roomInfo = new Room(rooms.Count-1, room.transform.position, roomRadius);
+            roomsPlaced.Add(roomInfo);
+        }
+    }
+
+    void GenerateRoom(int type)
+    {
+        GameObject room;
+        int version = Random.Range(0, roomsPrefab[type].Count());
+        Transform roomTransform = roomsPrefab[type][version].GetComponent<Transform>();
+        GameObject roomPref = roomsPrefab[type][version];
+        Vector3 roomPos = roomCheckPos[rooms.Count()];
+        room = Instantiate(roomPref, roomPos, Quaternion.identity);
+        rooms.Add(room);
+        room.transform.position = FindClosestVertex(room.transform.position);
+        room.transform.localScale = new Vector3(roomRadius * 2, roomRadius * 2, roomRadius * 2);
+        foreach (Transform t in roomTransform)
+        {
+            t.position = new Vector3(t.position.x, 0, t.position.z);
+        }
+
+        Room roomInfo = new Room(rooms.Count-1, room.transform.position, roomRadius);
+        roomsPlaced.Add(roomInfo);
+    }
+
+    int GetNbRooms()
+    {
+        int nbRooms = 0;
+        for (int i = 0; i < numbersOfRoomsType.Length; i++)
+        {
+            nbRooms += numbersOfRoomsType[i];
+        }
+        return nbRooms;
+    }
+
+    bool IsZoneFlat(Vector3 pos)
+    {
+        Mesh terrainMesh = terrain.sharedMesh;
+        Vector3[] vertices = terrainMesh.vertices;
+        foreach (Vector3 v in vertices)
+        {
+            if (Vector3.Distance(pos, v) < roomRadius)
             {
-                isGoingDown = true;
-                return GoingDown();
-            }
-        }
-        if (lastDirection == Direction.UP || lastDirection == Direction.DOWN)
-        {
-            return slopeDirection;
-        }
-
-        possibleDirections.Add(Direction.LEFT);
-        possibleDirections.Add(Direction.RIGHT);
-        possibleDirections.Add(Direction.FORWARD);
-        possibleDirections.Add(Direction.BACKWARD);
-        possibleDirections.Remove(OppositeDirection(lastDirection));
-
-        possibleDirections = CanChoseDirections(possibleDirections);
-
-        return possibleDirections[Random.Range(0, possibleDirections.Count)];
-    }
-
-    // Instantiate next tile, add prohibited position of the last tile placed and return the future last direction
-    Direction PlaceNextTile()
-    {
-        Vector3 nextTileLocation = ComputeNextTileLocation();
-        GameObject pathTileinstance;
-
-        prohibitedPositions.Add(new Vector2(nextTileLocation.x, nextTileLocation.z));
-
-        for (int i = 0; i < nextPossibleProhibitedPositions.Count; i++)
-        {
-            if (!prohibitedPositions.Contains(nextPossibleProhibitedPositions[i]))
-            {
-                prohibitedPositions.Add(nextPossibleProhibitedPositions[i]);
-            }
-        }
-
-        nextPossibleProhibitedPositions.Add(new Vector2(nextTileLocation.x + 2, nextTileLocation.z));
-        nextPossibleProhibitedPositions.Add(new Vector2(nextTileLocation.x - 2, nextTileLocation.z));
-        nextPossibleProhibitedPositions.Add(new Vector2(nextTileLocation.x, nextTileLocation.z + 2));
-        nextPossibleProhibitedPositions.Add(new Vector2(nextTileLocation.x, nextTileLocation.z - 2));
-
-        if (nextDirection == Direction.UP)
-        {
-            pathTileinstance  = Instantiate(slopePathTile, nextTileLocation, TileOrientation()) as GameObject;
-            nextTileLocation += directions[nextDirection];
-        } else if (nextDirection == Direction.DOWN)
-        {
-            pathTileinstance = Instantiate(slopePathTile, nextTileLocation, TileOrientation()) as GameObject;
-        } else
-        {
-            pathTileinstance = Instantiate(pathTile, nextTileLocation, TileOrientation()) as GameObject;
-        }
-
-        nbGenerated++;
-        pathInstances.Add(pathTileinstance);
-        currentTileLocation = nextTileLocation;
-        return nextDirection;
-    }
-
-    // calculate next tile location 
-    Vector3 ComputeNextTileLocation()
-    {
-        if (nextDirection == Direction.UP && currentNbUp == 1 || nextDirection == Direction.DOWN && currentNbDown == 1)
-        {
-            slopeDirection = lastDirection;
-            currentTileLocation += directions[slopeDirection];
-        } else if (nextDirection == Direction.UP || nextDirection == Direction.DOWN)
-        {
-            currentTileLocation += directions[slopeDirection];
-        }
-
-        if (nextDirection == Direction.UP)
-        {
-            return currentTileLocation;
-        }
-
-
-        return currentTileLocation + directions[nextDirection];
-    }
-
-    Vector3 ComputeNextTileLocation(Direction nextDirection)
-    {
-        if (nextDirection == Direction.UP && currentNbUp == 1 || nextDirection == Direction.DOWN && currentNbDown == 1)
-        {
-            slopeDirection = lastDirection;
-            currentTileLocation += directions[slopeDirection];
-        }
-        else if (nextDirection == Direction.UP || nextDirection == Direction.DOWN)
-        {
-            currentTileLocation += directions[slopeDirection];
-        }
-
-        if (nextDirection == Direction.UP)
-        {
-            return currentTileLocation;
-        }
-
-
-        return currentTileLocation + directions[nextDirection];
-    }
-
-    // return the opposite direction of the given direction
-    Direction OppositeDirection(Direction direction)
-    {
-        switch (direction)
-        {
-            case Direction.UP:
-                return Direction.DOWN;
-            case Direction.DOWN:
-                return Direction.UP;
-            case Direction.LEFT:
-                return Direction.RIGHT;
-            case Direction.RIGHT:
-                return Direction.LEFT;
-            case Direction.FORWARD:
-                return Direction.BACKWARD;
-            case Direction.BACKWARD:
-                return Direction.FORWARD;
-            default:
-                return direction;
-        }
-    }
-
-    List<Direction> CanChoseDirections(List<Direction> possibleDirections)
-    {
-        Vector3 nextPosition;
-        Vector2 position2d;
-        List<Direction> toRemove = new();
-        foreach (Direction direction in possibleDirections)
-        {
-            nextPosition = ComputeNextTileLocation(direction);
-            position2d = new Vector2(nextPosition.x, nextPosition.z);
-            if (prohibitedPositions.Contains(position2d))
-            {
-                toRemove.Add(direction);
+                if (Mathf.Abs(pos.y - v.y) > flatThreshold)
+                {
+                    return false;
+                }
             }
         }
-
-        foreach (Direction direction in toRemove)
-        {
-            possibleDirections.Remove(direction);
-        }
-        return possibleDirections;
+        return true;
     }
 
-    // chose if it goes up
-    bool IsGoingUp()
+    bool FarEnough(Vector3 pos)
     {
-        //Vector3 nextPosition = ComputeNextTileLocation(Direction.UP);
-        //Vector2 position2d = new Vector2(nextPosition.x, nextPosition.z);
-
-        if (lastDirection == Direction.FORWARD || lastDirection)
-
-        if (isGoingUp)
+        foreach (Vector3 roomPos in possibleRoomsPlacement)
         {
-            if (currentNbUp<minUpInARow)
+            if (Vector3.Distance(roomPos, pos) < minDistanceBetween2Rooms)
             {
-                return true;
-            }
-            return (currentNbUp <= maxUpInARow) && Random.Range(0f, 1f) < upProba;// && !nextPossibleProhibitedPositions.Contains(position2d);
-        } else
-        {
-            return nbGenerated > minBeforeFirstSlope && Random.Range(0f, 1f) < upProba;// && !nextPossibleProhibitedPositions.Contains(position2d);
-        }
-    }
-
-    // chose if it goes down
-    bool IsGoingDown()
-    {
-        //Vector3 nextPosition = ComputeNextTileLocation(Direction.DOWN);
-        //Vector2 position2d = new Vector2(nextPosition.x, nextPosition.z);
-
-        if (isGoingDown)
-        {
-            if (currentNbDown < minUpInARow)
-            {
-                return true;
-            }
-            return (currentNbDown <= maxUpInARow && totalNbDown < totalNbUp) && Random.Range(0f, 1f) < downProba;// && !nextPossibleProhibitedPositions.Contains(position2d);
-        } else
-        {
-            return totalNbDown < totalNbUp && Random.Range(0f, 1f) < downProba;// && !nextPossibleProhibitedPositions.Contains(position2d);
-        }
-    }
-
-    // chose if it continue the platform after reaching the min platform size
-    bool ContinuePlatform()
-    {
-        return Random.Range(0f, 1f) < platformProba;
-    }
-
-    Direction GoingUp()
-    {
-        totalNbUp++;
-        currentNbUp++;
-        return Direction.UP;
-    }
-
-    Direction GoingDown()
-    {
-        totalNbDown++;
-        currentNbDown++;
-        return Direction.DOWN;
-    }
-
-    Quaternion TileOrientation()
-    {
-        if (nextDirection == Direction.UP) 
-        {
-            switch (slopeDirection)
-            {
-                case Direction.FORWARD:
-                    return Quaternion.identity;
-                case Direction.BACKWARD:
-                    return Quaternion.Euler(new Vector3(0, 180, 0));
-                case Direction.RIGHT:
-                    return Quaternion.Euler(new Vector3(0, 90, 0));
-                case Direction.LEFT:
-                    return Quaternion.Euler(new Vector3(0, -90, 0));
-                default:
-                    return Quaternion.identity;
+                return false;
             }
         }
-        else if (nextDirection == Direction.DOWN)
+        return true;
+    }
+
+    Vector3 FindClosestVertex(Vector3 targetPos)
+    {
+        Mesh mesh = terrain.sharedMesh;
+        Vector3[] vertices = mesh.vertices;
+        Transform terrainTransform = terrain.transform;
+
+        Vector3 closestVertex = Vector3.zero;
+        float minDist2D = Mathf.Infinity;
+
+        foreach (Vector3 v in vertices)
         {
-            switch (slopeDirection)
+            Vector3 worldV = terrainTransform.TransformPoint(v);
+            float distXZ = Vector2.Distance(new Vector2(worldV.x, worldV.z), new Vector2(targetPos.x, targetPos.z));
+
+            if (distXZ < minDist2D)
             {
-                case Direction.FORWARD:
-                    return Quaternion.Euler(new Vector3(0, 180, 0));
-                    
-                case Direction.BACKWARD:
-                    return Quaternion.identity;
-                case Direction.RIGHT:
-                    return Quaternion.Euler(new Vector3(0, -90, 0));
-                case Direction.LEFT:
-                    return Quaternion.Euler(new Vector3(0, 90, 0));
-                default:
-                    return Quaternion.identity;
+                minDist2D = distXZ;
+                closestVertex = worldV;
             }
         }
-        switch (nextDirection)
+
+        return closestVertex;
+    }
+
+    void ConnectRooms()
+    {
+        print(roomsPlaced.Count);
+       foreach (Room roomA in roomsPlaced)
         {
-            case Direction.FORWARD:
-                return Quaternion.identity;
-            case Direction.BACKWARD: 
-                return Quaternion.Euler(new Vector3(0, 180, 0));
-            case Direction.RIGHT:
-                return Quaternion.Euler(new Vector3(0, 90, 0));
-            case Direction.LEFT:
-                return Quaternion.Euler(new Vector3(0, -90, 0));
-            default:
-                return Quaternion.identity;
+            foreach (Room roomB in roomsPlaced)
+            {
+                if (!roomA.Equals(roomB) && Vector3.Distance(roomA.GetPos(), roomB.GetPos()) < maxDistanceConnexion) 
+                {
+                    Path path = new Path(roomA, roomB);
+                    paths.Add(path);
+                    print("Path : " + roomA.GetPos() + " - " + roomB.GetPos());
+                }
+            }
         }
     }
+
 }
