@@ -100,6 +100,56 @@ public class ProceduralGenerationManager : MonoBehaviour
 
     float debut;
 
+    public void SetRandomSeed(bool newRandomSeed)
+    {
+        randomSeed = newRandomSeed;
+    }
+
+    public void SetSeed(int newSeed)
+    {
+        seed = newSeed;
+    }
+
+    public void SetFlatThreshold(float newFlatThreshold)
+    {
+        flatThreshold = newFlatThreshold;
+    }
+
+    public void SetRoomRadius(float newRoomRadius)
+    {
+        roomRadius = newRoomRadius;
+    }
+
+    public void SetDistance(float newDistance)
+    {
+        minDistanceBetween2Rooms = newDistance;
+    }
+
+    public int GetSeed()
+    {
+        return seed;
+    } 
+
+    public bool GetRandomSeed()
+    {
+        return randomSeed;
+    }
+
+    public float GetFlatThreshold()
+    {
+        return flatThreshold;
+    }
+
+    public float GetRoomRadius()
+    {
+        return roomRadius;
+    }
+
+    public float GetDistance()
+    {
+        return minDistanceBetween2Rooms;
+    }
+
     [System.Obsolete]
     void Start()
     {
@@ -236,7 +286,7 @@ public class ProceduralGenerationManager : MonoBehaviour
         waitingScreenAnimator.SetBool("Loading", false);
     }
 
-    void StartGeneration()
+    public void StartGeneration()
     {
         debut = Time.realtimeSinceStartup;
         if (randomSeed)

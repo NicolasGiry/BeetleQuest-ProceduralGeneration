@@ -7,7 +7,6 @@ public class MapGenerator : MonoBehaviour
     public enum DrawMode
     {
         NoiseMap,
-        Mesh,
         ColorMap
     };
 
@@ -101,6 +100,89 @@ public class MapGenerator : MonoBehaviour
         }
 
         GenerateMap();
+    }
+
+    public void SetLod(int newLod)
+    {
+        lod = newLod;
+        GenerateMap();
+    }
+
+    public void SetNoiseScale(float newNoiseScale)
+    {
+        noiseScale = newNoiseScale;
+        GenerateMap();
+    }
+
+    public void SetOctaves(int newOctaves)
+    {
+        octaves = newOctaves;
+        GenerateMap();
+    }
+
+    public void SetPersistance(float newPersistance)
+    {
+        persistance = newPersistance;
+        GenerateMap();
+    }
+
+    public void SetLacunarity(float newLacunarity)
+    {
+        lacunarity = newLacunarity;
+        GenerateMap();
+    }
+
+    public void SetHeightMultiplier(float newHeightMultiplier)
+    {
+        heightMultiplier = newHeightMultiplier;
+        GenerateMap();
+    }
+
+    public void SetDrawMode(DrawMode newDrawMode)
+    {
+        drawMode = newDrawMode;
+        GenerateMap();
+    }
+
+    public void SetSeed(int newSeed)
+    {
+        seed = newSeed;
+        GenerateMap();
+    }
+
+    public int GetLod()
+    {
+        return lod;
+    }
+
+    public float GetNoiseScale()
+    {
+        return noiseScale;
+    }
+
+    public int GetOctaves()
+    {
+        return octaves;
+    }
+
+    public float GetPersistance()
+    {
+        return persistance;
+    }
+
+    public float GetLacunarity()
+    {
+        return lacunarity;
+    }
+
+    public float GetHeightMultiplier()
+    {
+        return heightMultiplier;
+    }
+
+    public DrawMode GetDrawMode()
+    {
+        return drawMode;
     }
 
     public void GenerateMap()
